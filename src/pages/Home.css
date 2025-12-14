@@ -633,6 +633,8 @@
 @media (max-width: 768px) {
   .app-logo-text {
     font-size: 1.5rem !important;
+    font-weight: 900 !important;
+    font-family: "Arial Black", "Roboto", "Helvetica Neue", sans-serif !important;
     /* Shrink on mobile */
   }
 }
