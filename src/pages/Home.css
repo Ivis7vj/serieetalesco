@@ -719,8 +719,13 @@
     /* Shrink stats text */
   }
 
-  .profile-nav-responsive button {
-    padding: 10px 15px !important;
-    font-size: 0.8rem !important;
-  }
+  padding: 10px 15px !important;
+  font-size: 0.8rem !important;
+}
+}
+
+/* Global Reset for Titles */
+a {
+  text-decoration: none;
+  color: inherit;
 }
