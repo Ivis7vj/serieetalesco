@@ -1,6 +1,6 @@
 import { MdHome, MdStarBorder, MdAdd, MdPublic } from 'react-icons/md';
 import { CgProfile } from 'react-icons/cg';
-import { IoSettingsOutline } from 'react-icons/io5';
+
 import { NavLink } from 'react-router-dom';
 import '../pages/Home.css';
 
@@ -41,14 +41,7 @@ const Sidebar = ({ onLogout }) => {
                     <span className="sidebar-text">Profile</span>
                 </NavLink>
 
-                <NavLink
-                    to="/settings"
-                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                    style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
-                >
-                    <IoSettingsOutline size={28} />
-                    <span className="sidebar-text">Settings</span>
-                </NavLink>
+
             </nav>
         </aside>
     );
