@@ -444,7 +444,8 @@
   /* Header Adjustments */
   .header {
     padding: 0 15px;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
   }
 
   .header-icon-btn {
@@ -454,9 +455,9 @@
 
   /* Mobile Content Wrapper */
   .content-wrapper {
-    margin-top: 60px;
+    margin-top: calc(60px + env(safe-area-inset-top));
     /* Match header height */
-    height: calc(100vh - 60px);
+    height: calc(100vh - (60px + env(safe-area-inset-top)));
     /* Adjust height */
     flex-direction: column;
     /* Stack if needed, but we keep generic structure */
@@ -465,7 +466,7 @@
   /* Transform Sidebar to Bottom Nav */
   .left-sidebar {
     width: 100%;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-bottom));
     position: fixed;
     bottom: 0;
     left: 0;
@@ -475,7 +476,7 @@
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(10px);
     z-index: 2000;
-    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
     justify-content: space-around;
   }
 

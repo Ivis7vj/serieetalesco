@@ -28,7 +28,7 @@ const Layout = () => {
                     onClick={() => navigate(-1)}
                     style={{
                         position: 'fixed',
-                        top: '20px',
+                        top: 'calc(20px + env(safe-area-inset-top))',
                         left: '20px',
                         zIndex: 1000,
                         background: 'transparent',
