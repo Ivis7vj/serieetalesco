@@ -37,31 +37,31 @@ const Sidebar = ({ onLogout }) => {
                     to="/profile"
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                     style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
-                >
-                    <CgProfile size={28} />
+                    <span className="sidebar-text">Profile</span>
+            </NavLink>
 
-                    <NavLink
-                        to="/settings"
-                        className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                        style={({ isActive }) => ({
-                            color: isActive ? '#fff' : '#888', // Highlight white when active, muted gray otherwise
-                            textDecoration: 'none',
-                            background: isActive ? '#000' : 'transparent', // Pure black bg when active
-                            fontWeight: '700', // Rich Bold
-                            fontFamily: 'Arial, sans-serif',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '10px'
-                        })}
-                    >
-                        <IoSettingsOutline size={28} />
-                        <span className="sidebar-text" style={{ fontSize: '1rem' }}>Settings</span>
-                    </NavLink>
+            <NavLink
+                to="/settings"
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                style={({ isActive }) => ({
+                    color: isActive ? '#fff' : '#888', // Highlight white when active, muted gray otherwise
+                    textDecoration: 'none',
+                    background: isActive ? '#000' : 'transparent', // Pure black bg when active
+                    fontWeight: '700', // Rich Bold
+                    fontFamily: 'Arial, sans-serif',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px'
+                })}
+            >
+                <IoSettingsOutline size={28} />
+                <span className="sidebar-text" style={{ fontSize: '1rem' }}>Settings</span>
+            </NavLink>
 
 
-            </nav>
-        </aside>
+        </nav>
+        </aside >
     );
 };
 
