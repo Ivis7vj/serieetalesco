@@ -689,6 +689,17 @@
     font-weight: 700 !important;
   }
 
+  .episode-review-btn-mobile {
+    font-size: 1rem !important;
+    padding: 8px 12px !important;
+    width: 100%;
+    justify-content: center;
+    background: rgba(70, 211, 105, 0.1) !important;
+    /* Subtle background */
+    border-radius: 4px;
+    margin-top: 5px;
+  }
+
   .action-btn-responsive svg {
     width: 20px !important;
     /* Increased icon size */
