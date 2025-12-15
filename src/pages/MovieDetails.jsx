@@ -33,13 +33,18 @@ const MovieDetails = () => {
     const [inWatchlist, setInWatchlist] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
 
-    // Filter User Series Review (for Action Button State)
-    const userSeriesReview = reviewsData.find(r => r.tmdbId === parseInt(id || 0) && r.userId === currentUser?.uid && !r.isEpisode);
+
 
     const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '05587a49bd4890a9630d6c0e544e0f6f';
     const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
     const [selectedSeason, setSelectedSeason] = useState(seasonNumber ? parseInt(seasonNumber) : 1);
+
+    // Filter User Series Review (for Action Button State) - Keeping Series Level
+    const userSeriesReview = reviewsData.find(r => r.tmdbId === parseInt(id || 0) && r.userId === currentUser?.uid && !r.isEpisode && !r.isSeason);
+    // Find User Season Review
+    const userSeasonReview = reviewsData.find(r => r.tmdbId === parseInt(id || 0) && r.userId === currentUser?.uid && r.isSeason && r.seasonNumber === selectedSeason);
+
     const [isSeasonOpen, setIsSeasonOpen] = useState(false);
     const [episodes, setEpisodes] = useState([]);
     const [seasonsValues, setSeasonsValues] = useState([]);
@@ -73,23 +78,35 @@ const MovieDetails = () => {
         }
     }, [storyData, generateStory]);
 
-    const handleShare = (reviewItem, isEpisode = false) => {
+    const handleShare = (reviewItem, isEpisode = false, isSeason = false) => {
         let seasonName = null;
+        let episodeCountText = "";
+
         if (isEpisode) {
-            // Find season name from seasonsValues if available
+            // Find season name
             const foundSeason = seasonsValues.find(s => s.season_number === reviewItem.seasonNumber);
             seasonName = foundSeason ? (foundSeason.name || `Season ${reviewItem.seasonNumber}`) : `Season ${reviewItem.seasonNumber}`;
+        } else if (isSeason) {
+            const foundSeason = seasonsValues.find(s => s.season_number === reviewItem.seasonNumber);
+            // Ensure we get the correct season info even if reviewItem is partial
+            seasonName = foundSeason ? (foundSeason.name || `Season ${reviewItem.seasonNumber}`) : `Season ${reviewItem.seasonNumber}`;
+            episodeCountText = foundSeason ? `${foundSeason.episode_count} Episodes` : "";
         }
 
         const name = isEpisode
             ? `${details.name} (S${reviewItem.seasonNumber}E${reviewItem.episodeNumber})`
-            : details.name;
+            : isSeason
+                ? `${details.name} (${seasonName})`
+                : details.name;
+
+        // Construct Sticker Text for Season: "Season X • Y Episodes"
+        const finalSeasonName = isSeason && episodeCountText ? `${seasonName} • ${episodeCountText}` : seasonName;
 
         setStoryData({
             movie: {
                 name: name,
-                poster_path: details.poster_path,
-                seasonName: seasonName // Pass to StoryCard
+                poster_path: isSeason ? (seasonDetails?.poster_path || details.poster_path) : details.poster_path, // Use Season Poster
+                seasonName: finalSeasonName // Passed to StoryCard
             },
             rating: reviewItem.rating,
             review: reviewItem.review,
@@ -786,20 +803,164 @@ const MovieDetails = () => {
 
 
     // Get existing review for an item
-    const getExistingReview = (itemId, isEpisode = false) => {
+    // Get existing review for an item
+    const getExistingReview = (itemId, isEpisode = false, isSeason = false, seasonNum = null) => {
         if (!currentUser) return null;
         if (isEpisode) {
             return reviewsData.find(r => r.episodeId === itemId && r.isEpisode && r.userId === currentUser.uid);
+        } else if (isSeason) {
+            return reviewsData.find(r => r.tmdbId === itemId && r.isSeason && r.seasonNumber === seasonNum && r.userId === currentUser.uid);
         } else {
-            // Check for Season Review based on seasonNumber if available
-            return reviewsData.find(r => r.tmdbId === itemId && !r.isEpisode && r.seasonNumber === selectedSeason && r.userId === currentUser.uid);
+            // Series (Default)
+            // Ensure we exclude seasons/episodes
+            return reviewsData.find(r => r.tmdbId === itemId && !r.isEpisode && !r.isSeason && r.userId === currentUser.uid);
         }
+    };
+
+    const handleSeasonReview = (seasonNum) => {
+        const existing = getExistingReview(details.id, false, true, seasonNum); // itemId, isEpisode, isSeason, seasonNum
+        setExistingReviewData(existing || null);
+        setReviewingItem({
+            type: 'season',
+            id: details.id,
+            name: `${details.name} (Season ${seasonNum})`,
+            seasonNumber: seasonNum
+        });
+        setIsReviewOpen(true);
+    };
+
+    const handleEditReview = (review) => {
+        setExistingReviewData(review);
+        setReviewingItem({
+            type: review.isEpisode ? 'episode' : (review.isSeason ? 'season' : 'series'),
+            id: review.isEpisode ? review.episodeId : review.tmdbId,
+            name: review.topicName || details.name, // generic fallback
+            seasonNumber: review.seasonNumber,
+            episodeNumber: review.episodeNumber
+        });
+        setIsReviewOpen(true);
+    }
+
+    // Review Submit Logic (Common for Series, Season, Episode)
+    const handleReviewSubmit = async (data) => {
+        if (!currentUser) return;
+        const { rating, review } = data;
+
+        // Determine Targets
+        let targetId = reviewingItem.id;
+        let isEpisode = reviewingItem.type === 'episode';
+        let isSeason = reviewingItem.type === 'season';
+
+        // Define Doc Ref (Update if exists, Add if new)
+        // We can't use setDoc with custom ID easily unless we enforce ID gen.
+        // But we have 'existingReviewData' which contains the ID if editing.
+
+        try {
+            if (existingReviewData && existingReviewData.id) {
+                // UPDATE
+                const reviewRef = doc(db, 'reviews', existingReviewData.id);
+                await updateDoc(reviewRef, {
+                    rating: rating,
+                    review: review,
+                    updatedAt: new Date().toISOString() // Update timestamp? User usually wants 'edited' timestamp or just update.
+                });
+                // Local Update (Optimistic)
+                setReviewsData(prev => prev.map(r => r.id === existingReviewData.id ? { ...r, rating, review, updatedAt: new Date().toISOString() } : r));
+            } else {
+                // CREATE
+                const docRef = await addDoc(collection(db, 'reviews'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email, // Fallback
+                    author: currentUser.email, // Legacy field support
+                    photoURL: currentUser.photoURL,
+                    tmdbId: parseInt(details.id), // Series ID is common pivot
+                    seriesId: details.id, // Semantic
+
+                    // Discriminators
+                    isEpisode: isEpisode,
+                    isSeason: isSeason,
+
+                    // Specifics
+                    episodeId: isEpisode ? reviewingItem.id : null,
+                    episodeNumber: isEpisode ? reviewingItem.episodeNumber : null,
+                    seasonNumber: isSeason ? reviewingItem.seasonNumber : (isEpisode ? reviewingItem.seasonNumber : null),
+
+                    rating: rating,
+                    review: review,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    likes: [],
+                    source: 'app',
+                    topicName: reviewingItem.name // Store the name of the item being reviewed (series, season, episode)
+                });
+
+                // Mark as Watched Logic (Firestore) - Only for Series/Season reviews, not individual episodes
+                if (!isEpisode) {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        const data = userSnap.data();
+
+                        // Robust Duplication Check: Check by ID
+                        const isAlreadyInWatched = data.watched?.some(w => String(w.id) === String(details.id));
+
+                        if (!isAlreadyInWatched) {
+                            const itemToSave = {
+                                id: details.id,
+                                name: details.name,
+                                poster_path: details.poster_path,
+                                vote_average: details.vote_average,
+                                first_air_date: details.first_air_date,
+                                type: type,
+                                date: new Date().toISOString()
+                            };
+                            await updateDoc(userRef, {
+                                watched: arrayUnion(itemToSave)
+                            });
+                            setIsWatched(true);
+                        }
+                    }
+                }
+
+                // Update Local
+                setReviewsData(prev => [...prev, {
+                    ...reviewDataPayload,
+                    id: newDocRef.id,
+                    likes: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }]);
+
+                // SUCCESS FLOW (Silent Badge Add) - Only for Series/Season reviews
+                if (!isEpisode) {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    await updateDoc(userRef, {
+                        starSeries: arrayUnion({
+                            id: details.id,
+                            name: details.name,
+                            poster_path: details.poster_path,
+                            date: new Date().toISOString()
+                        })
+                    });
+                    // setShowStarBadge(true); // Removed
+                }
+            }
+        } catch (e) {
+            console.error("Error saving review", e);
+        }
+        setIsReviewOpen(false);
     };
 
     const openEpisodeReview = (ep) => {
         const existing = getExistingReview(ep.id, true);
-        setReviewingItem(ep);
-        setExistingReviewData(existing ? { rating: existing.rating, review: existing.review } : null);
+        setExistingReviewData(existing || null);
+        setReviewingItem({
+            type: 'episode',
+            id: ep.id,
+            name: `${details.name} S${ep.season_number}E${ep.episode_number}`,
+            seasonNumber: ep.season_number,
+            episodeNumber: ep.episode_number
+        });
         setIsReviewOpen(true);
     };
 
@@ -809,6 +970,9 @@ const MovieDetails = () => {
         await actionFn();
     };
 
+    // The old handleReviewSubmit logic is replaced by the new one above.
+    // This section is now removed as per the diff.
+    /*
     const handleReviewSubmit = async ({ rating, review }) => {
         if (!currentUser) return;
 
@@ -948,6 +1112,7 @@ const MovieDetails = () => {
             console.error("Error saving review: ", error);
         }
     };
+    */
 
     if (loading) return <div className="loading">Loading...</div>;
     if (!details) return <div className="loading">Not found</div>;
@@ -1168,7 +1333,35 @@ const MovieDetails = () => {
                 }}>
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'nowrap', overflowX: 'auto' }}>
                         {/* REVIEW */}
-                        {/* REVIEW */}
+                        <button
+                            className="action-btn-responsive"
+                            onClick={() => {
+                                setExistingReviewData(userSeriesReview || null);
+                                setReviewingItem({ type: 'series', id: details.id, name: details.name });
+                                setIsReviewOpen(true);
+                            }}
+                            style={{
+                                background: userSeriesReview ? '#fff' : '#FFCC00',
+                                color: '#000',
+                                border: `2px solid ${userSeriesReview ? '#fff' : '#FFCC00'}`,
+                                padding: '12px 30px',
+                                fontSize: '1.1rem',
+                                fontWeight: '900',
+                                cursor: 'pointer',
+                                textTransform: 'uppercase',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                borderRadius: '0px',
+                                outline: 'none',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                zIndex: 1,
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            <MdRateReview size={20} /> {userSeriesReview ? `Rated (${userSeriesReview.rating})` : 'Review'}
+                        </button>
 
 
                         {/* Star Badge Popup */}
@@ -1430,6 +1623,44 @@ const MovieDetails = () => {
                         )}
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Season Action Buttons */}
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+                            <button
+                                className="action-button icon-only"
+                                onClick={() => handleAction(async () => {
+                                    if (!(await checkAuth())) return;
+                                    toggleWatched();
+                                })}
+                                title={isWatched ? "Remove from Watched" : "Mark as Watched"}
+                            >
+                                {isWatched ? <MdVisibilityOff /> : <MdVisibility />}
+                            </button>
+
+                            {/* Season Review Button */}
+                            <button
+                                className="action-button icon-only"
+                                onClick={() => handleSeasonReview(selectedSeason)}
+                                title={userSeasonReview ? "Edit Season Review" : "Review Season"}
+                                style={{ color: userSeasonReview ? 'var(--accent-color)' : 'inherit' }}
+                            >
+                                <MdRateReview />
+                            </button>
+
+                            {/* Share Season Button - Only if Reviewed */}
+                            {userSeasonReview && (
+                                <button
+                                    className="action-button icon-only"
+                                    onClick={() => handleShare(userSeasonReview, false, true)}
+                                    title="Share Season Review"
+                                >
+                                    <MdIosShare />
+                                </button>
+                            )}
+
+                            <button className="action-button icon-only" onClick={() => setShareModal({ isOpen: true, imageUrl: `https://image.tmdb.org/t/p/w500${seasonDetails?.poster_path || details.poster_path}` })} title="Share Poster">
+                                <MdShare />
+                            </button>
+                        </div>
                         {episodes.map(ep => {
                             const epReviews = reviewsData.filter(r => r.tmdbId === parseInt(id) && r.seasonNumber === selectedSeason && r.episodeNumber === ep.episode_number && r.isEpisode);
                             const epCount = epReviews.length;
@@ -1659,15 +1890,59 @@ const MovieDetails = () => {
                 )
             }
 
+            {showStarBadge && (
+                <StarBadger
+                    seriesId={details.id}
+                    seriesName={details.name}
+                    posterPath={details.poster_path}
+                    onClose={handleStarBadgeComplete} // Use the new handler
+                />
+            )}
 
+            <ReviewModal
+                isOpen={isReviewOpen}
+                onClose={() => setIsReviewOpen(false)}
+                onSubmit={handleReviewSubmit}
+                movieName={reviewingItem?.name || details.name}
+                initialRating={existingReviewData?.rating || 5}
+                initialReview={existingReviewData?.review || ''}
+                modalTitle={existingReviewData ? "Edit Review" : "Write a Review"}
+            />
 
             <ReviewsDrawer
                 isOpen={isReviewsOpen}
                 onClose={() => setIsReviewsOpen(false)}
-                onLike={handleReviewLike}
-                currentUser={currentUser}
-                reviews={reviewsData
-                    .filter(r => r.seasonNumber === selectedSeason) // Filter by Selected Season
+                reviews={[...reviewsData]
+                    .filter(r => {
+                        // Filter based on context? 
+                        // User said "show the reviews by the episode wise , for the sepereate season"
+                        // This is tricky. Usually drawer shows ALL reviews for the series?
+                        // OR should it show reviews for the CURRENT Season view?
+                        // "show the reviews by the episode wise , for the sepereate season"
+                        // Implies: If I am viewing Season 1, I see Season 1 reviews (Season Level + Episodes in S1).
+
+                        // Let's filter:
+                        // 1. Series Level (Always? Or only on main page? User said "for the separate season")
+                        // Let's include Series Level + Current Season Level + Episodes in Current Season.
+
+                        const isSeriesLevel = !r.isSeason && !r.isEpisode;
+                        const isCurrentSeason = r.isSeason && r.seasonNumber === selectedSeason;
+                        const isEpisodeInSeason = r.isEpisode && r.seasonNumber === selectedSeason;
+
+                        return isSeriesLevel || isCurrentSeason || isEpisodeInSeason;
+                    })
+                    .sort((a, b) => {
+                        // 1. My Review First
+                        const amIAuthor = a.userId === currentUser?.uid;
+                        const bmIAuthor = b.userId === currentUser?.uid;
+                        if (amIAuthor && !bmIAuthor) return -1;
+                        if (!amIAuthor && bmIAuthor) return 1;
+
+                        // 2. Most Liked First
+                        const aLikes = a.likes?.length || 0;
+                        const bLikes = b.likes?.length || 0;
+                        return bLikes - aLikes;
+                    })
                     .map(r => ({
                         id: r.id,
                         source: 'app',
@@ -1680,7 +1955,12 @@ const MovieDetails = () => {
                         userId: r.userId,
                         photoURL: r.photoURL || null,
                         episodeNumber: r.episodeNumber,
-                        isEpisode: r.isEpisode
+                        isEpisode: r.isEpisode,
+                        isSeason: r.isSeason,
+                        seasonNumber: r.seasonNumber,
+                        tmdbId: r.tmdbId,
+                        episodeId: r.episodeId,
+                        topicName: r.topicName || details.name // Pass topicName for editing context
                     }))}
                 onDelete={async (id) => {
                     if (!currentUser) return;
@@ -1711,6 +1991,8 @@ const MovieDetails = () => {
                     }
                 }}
                 onShare={handleShare}
+                onLike={handleReviewLike}
+                onEdit={handleEditReview}
                 theme={{}}
             />
 

@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { MdClose, MdStar, MdStarHalf, MdDelete, MdShare, MdPerson, MdFavorite, MdFavoriteBorder } from 'react-icons/md';
+import { MdClose, MdStar, MdStarHalf, MdDelete, MdShare, MdPerson, MdFavorite, MdFavoriteBorder, MdEdit } from 'react-icons/md';
 import { useNotification } from '../context/NotificationContext';
 import { Link } from 'react-router-dom';
 
-const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, currentUser, theme }) => {
+const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, onEdit, currentUser, theme }) => {
     const { confirm } = useNotification();
 
     useEffect(() => {
@@ -167,6 +167,14 @@ const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, cu
                                             }}>
                                                 EP{review.episodeNumber}
                                             </span>
+                                        ) : review.isSeason && review.seasonNumber ? (
+                                            <span style={{
+                                                background: '#333', color: '#fff', fontSize: '0.75rem',
+                                                fontWeight: '900', padding: '2px 6px', borderRadius: '4px',
+                                                border: '1px solid #555'
+                                            }}>
+                                                Season {review.seasonNumber}
+                                            </span>
                                         ) : (
                                             <span style={{
                                                 background: '#333', color: '#fff', fontSize: '0.75rem',
@@ -253,7 +261,18 @@ const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, cu
                                             </button>
                                         )}
 
-                                        {/* Only show delete if user owns the review */}
+                                        {/* Edit Button */}
+                                        {currentUser && review.userId === currentUser.uid && (
+                                            <button
+                                                onClick={() => onEdit && onEdit(review)}
+                                                style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer' }}
+                                                title="Edit"
+                                            >
+                                                <MdEdit size={18} />
+                                            </button>
+                                        )}
+
+                                        {/* Delete Button */}
                                         {currentUser && review.userId === currentUser.uid && (
                                             <button
                                                 onClick={() => handleDelete(review.id)}
