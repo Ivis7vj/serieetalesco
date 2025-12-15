@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import PosterBadge from '../components/PosterBadge';
 import './Home.css';
 
@@ -145,6 +145,13 @@ const Profile = () => {
                     following: data.following?.length || 0,
                     followers: data.followers?.length || 0
                 });
+
+                // Check Follow Status
+                if (currentUser && data.followers?.includes(currentUser.uid)) {
+                    setIsFollowing(true);
+                } else {
+                    setIsFollowing(false);
+                }
             }
         });
 
@@ -199,7 +206,60 @@ const Profile = () => {
         }
     };
 
+    const [isFollowing, setIsFollowing] = useState(false);
+
+    // Pull to Refresh State
+    const [refreshing, setRefreshing] = useState(false);
+    const [pullStartY, setPullStartY] = useState(0);
+
     const handleBoxClick = (index) => window.dispatchEvent(new CustomEvent('trigger-search-bar', { detail: { slotIndex: index } }));
+
+    const handleFollowToggle = async () => {
+        if (!currentUser || !targetUid) return;
+
+        const myRef = doc(db, 'users', currentUser.uid);
+        const targetRef = doc(db, 'users', targetUid);
+
+        try {
+            if (isFollowing) {
+                // Unfollow
+                await updateDoc(myRef, { following: arrayRemove(targetUid) });
+                await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
+                setIsFollowing(false);
+            } else {
+                // Follow
+                await updateDoc(myRef, { following: arrayUnion(targetUid) });
+                await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
+                setIsFollowing(true);
+            }
+        } catch (error) {
+            console.error("Error toggling follow:", error);
+        }
+    };
+
+    // Refresh Logic (Simple Reload)
+    const handleTouchStart = (e) => {
+        if (window.scrollY === 0) setPullStartY(e.touches[0].clientY);
+    };
+
+    const handleTouchMove = (e) => {
+        const y = e.touches[0].clientY;
+        if (pullStartY && y > pullStartY + 50 && window.scrollY === 0) {
+            // Visual cue could go here
+        }
+    };
+
+    const handleTouchEnd = (e) => {
+        const y = e.changedTouches[0].clientY;
+        if (pullStartY && y > pullStartY + 100 && window.scrollY === 0) {
+            setRefreshing(true);
+            // Simulate refresh or reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        }
+        setPullStartY(0);
+    };
 
     const getDiaryGroups = () => {
         const groups = {};
@@ -620,7 +680,20 @@ const Profile = () => {
     };
 
     return (
-        <div className="profile-wrapper" style={{ width: '70%', margin: '0 auto', maxWidth: '1400px', padding: '2rem 0', color: 'var(--text-primary)' }}>
+        <div
+            className="profile-wrapper"
+            style={{ width: '70%', margin: '0 auto', maxWidth: '1400px', padding: '2rem 0', color: 'var(--text-primary)', position: 'relative' }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {refreshing && (
+                <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', zIndex: 9999 }}>
+                    <div className="loading-circle" style={{ width: '40px', height: '40px', border: '4px solid #333', borderTop: '4px solid #FFCC00', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                </div>
+            )}
+
             <style>
                 {`
                 .profile-header-grid { display: grid; grid-template-columns: auto 1fr; column-gap: 2rem; row-gap: 1.5rem; margin-bottom: 2rem; position: relative; }
@@ -628,8 +701,29 @@ const Profile = () => {
                 .collapsible-header-content.collapsed { max-height: 0; opacity: 0; margin-bottom: 0; }
                 .profile-avatar-area { width: 120px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
                 .profile-details-area { display: flex; flex-direction: column; gap: 15px; padding-top: 10px; flex: 1; }
-                .profile-actions-animated { position: absolute; top: 0; right: 0; transition: all 0.5s ease; z-index: 10; }
+                .profile-actions-animated { position: absolute; top: 0; right: 0; transition: all 0.5s ease; z-index: 10; display: flex; gap: 10px; align-items: center; }
                 .profile-actions-animated.collapsed-menu { top: 10px; opacity: 0; pointer-events: none; visibility: hidden; }
+                .follow-btn {
+                    padding: 8px 24px;
+                    font-size: 1rem;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    border: 2px solid; /* Square border styling handled by border-radius 0 default or explicit */
+                    border-radius: 0px; 
+                    transition: all 0.2s ease;
+                }
+                .follow-btn.not-following {
+                    background: #FFCC00;
+                    color: #000;
+                    border-color: #FFCC00;
+                }
+                .follow-btn.following {
+                    background: #fff;
+                    color: #000;
+                    border-color: #fff;
+                }
+
                 .stats-container { display: flex; gap: 40px; align-items: center; }
                 .social-icons { display: flex; gap: 15px; justify-content: center; }
                 .social-icon-link { color: #888; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
@@ -715,6 +809,8 @@ const Profile = () => {
                         grid-template-columns: repeat(4, 1fr);
                         gap: 5px;
                     }
+
+                    .profile-actions-animated { top: 10px; right: 0; }
                 }
 
                 /* BASKET MODAL STYLES */
@@ -789,13 +885,28 @@ const Profile = () => {
                         <h1 className="profile-username">{user.username || 'User'}</h1>
                         <div className="stats-container">
                             <div className="stats-div" style={{ textAlign: 'center' }}><div className="stats-number">{stats.thisYear}</div><div className="stats-label">THIS YEAR</div></div>
-                            <div className="stats-div" style={{ textAlign: 'center' }}><div className="stats-number">{stats.followers}</div><div className="stats-label">FOLLOWERS</div></div>
-                            <div className="stats-div" style={{ textAlign: 'center' }}><div className="stats-number">{stats.following}</div><div className="stats-label">FOLLOWING</div></div>
+                            <Link to={`/profile/${targetUid}/followers`} className="stats-div" style={{ textAlign: 'center', textDecoration: 'none', cursor: 'pointer' }}>
+                                <div className="stats-number">{stats.followers}</div>
+                                <div className="stats-label">FOLLOWERS</div>
+                            </Link>
+                            <Link to={`/profile/${targetUid}/following`} className="stats-div" style={{ textAlign: 'center', textDecoration: 'none', cursor: 'pointer' }}>
+                                <div className="stats-number">{stats.following}</div>
+                                <div className="stats-label">FOLLOWING</div>
+                            </Link>
                         </div>
                         {user.bio && <div className="profile-bio">{user.bio}</div>}
                     </div>
                 </div>
                 <div className={`profile-actions-animated ${isCollapsed ? 'collapsed-menu' : ''}`} ref={menuRef}>
+                    {!isOwnProfile && (
+                        <button
+                            onClick={handleFollowToggle}
+                            className={`follow-btn ${isFollowing ? 'following' : 'not-following'}`}
+                        >
+                            {isFollowing ? 'UNFOLLOW' : 'FOLLOW'}
+                        </button>
+                    )}
+
                     {isOwnProfile && (
                         <>
                             <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.5rem', padding: '5px' }}><MdMoreVert /></button>

@@ -9,6 +9,8 @@ import MovieDetails from './pages/MovieDetails';
 import EpisodeDetails from './pages/EpisodeDetails';
 import Biography from './pages/Biography';
 import Settings from './pages/Settings';
+import Followers from './pages/Followers';
+import Following from './pages/Following';
 
 import Search from './pages/Search';
 import Layout from './Layout';
@@ -46,6 +48,8 @@ function App() {
                 <Route path="/profile/:uid" element={<Profile />} />
                 <Route path="/edit-profile" element={<EditProfile />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/profile/:uid/followers" element={<Followers />} />
+                <Route path="/profile/:uid/following" element={<Following />} />
               </Route>
             </Route>
 
