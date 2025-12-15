@@ -891,7 +891,8 @@ const MovieDetails = () => {
                     updatedAt: new Date().toISOString(),
                     likes: [],
                     source: 'app',
-                    topicName: reviewingItem.name // Store the name of the item being reviewed (series, season, episode)
+                    topicName: reviewingItem.name, // Store the name of the item being reviewed (series, season, episode)
+                    poster_path: details.poster_path // Add poster path for UserReview page
                 };
 
                 const newDocRef = await addDoc(collection(db, 'reviews'), reviewDataPayload);

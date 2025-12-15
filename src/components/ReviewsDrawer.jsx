@@ -167,7 +167,7 @@ const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, on
                                             }}>
                                                 EP{review.episodeNumber}
                                             </span>
-                                        ) : (!review.isEpisode && review.seasonNumber) ? (
+                                        ) : (!review.isEpisode && review.seasonNumber != null) ? (
                                             <span style={{
                                                 background: '#333', color: '#fff', fontSize: '0.75rem',
                                                 fontWeight: '900', padding: '2px 6px', borderRadius: '4px',
