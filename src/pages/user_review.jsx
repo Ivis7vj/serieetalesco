@@ -106,7 +106,7 @@ const UserReview = () => {
                 poster_path: reviewItem.poster_path, // Fallback if needed
                 seasonEpisode: reviewItem.isEpisode ? `S${reviewItem.seasonNumber} E${reviewItem.episodeNumber}` : (reviewItem.isSeason ? `S${reviewItem.seasonNumber}` : null)
             },
-            rating: reviewItem.rating,
+            rating: reviewItem.rating ? parseFloat(reviewItem.rating) * 2 : 0,
             user: currentUser,
             isEpisodes: reviewItem.isEpisode
         });

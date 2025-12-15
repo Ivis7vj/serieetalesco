@@ -301,7 +301,7 @@ const MovieDetails = () => {
                 poster_path: posterPathToUse,
                 seasonEpisode: seasonEpisodeText
             },
-            rating: reviewItem?.rating ? parseFloat(reviewItem.rating) : 0,
+            rating: reviewItem?.rating ? parseFloat(reviewItem.rating) * 2 : 0,
             user: currentUser,
             isEpisodes: isEpisode
         });
