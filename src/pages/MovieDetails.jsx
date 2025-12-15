@@ -868,7 +868,7 @@ const MovieDetails = () => {
                 setReviewsData(prev => prev.map(r => r.id === existingReviewData.id ? { ...r, rating, review, updatedAt: new Date().toISOString() } : r));
             } else {
                 // CREATE
-                const docRef = await addDoc(collection(db, 'reviews'), {
+                const reviewDataPayload = {
                     userId: currentUser.uid,
                     userName: currentUser.displayName || currentUser.email, // Fallback
                     author: currentUser.email, // Legacy field support
@@ -892,7 +892,9 @@ const MovieDetails = () => {
                     likes: [],
                     source: 'app',
                     topicName: reviewingItem.name // Store the name of the item being reviewed (series, season, episode)
-                });
+                };
+
+                const newDocRef = await addDoc(collection(db, 'reviews'), reviewDataPayload);
 
                 // Mark as Watched Logic (Firestore) - Only for Series/Season reviews, not individual episodes
                 if (!isEpisode) {
