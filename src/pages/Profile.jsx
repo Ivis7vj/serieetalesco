@@ -5,7 +5,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, limit, orderBy, startAfter } from 'firebase/firestore';
+
 import PosterBadge from '../components/PosterBadge';
 import './Home.css';
 
@@ -108,59 +109,82 @@ const Profile = () => {
     const [activityItems, setActivityItems] = useState([]);
     const [starSeriesIds, setStarSeriesIds] = useState(new Set());
 
-    // Fetch User Data (Real-time) - Unified Effect
+    // Fetch User Data (Optimized)
     useEffect(() => {
         if (!targetUid) return;
 
-        // User Data
-        const unsub = onSnapshot(doc(db, 'users', targetUid), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setUser({ ...data, username: data.username || data.email?.split('@')[0] || 'User' });
-                setProfilePhoto(data.photoURL || null);
+        let unsubUser = () => { };
 
-                // Lists
-                setWatchlist(data.watchlist || []);
-                setLikes(data.likes || []);
-                setWatched(data.watched || []);
+        const loadProfile = async () => {
+            // 1. Current User Profile (From AuthContext)
+            if (isOwnProfile && currentUser && window.location.pathname.includes('/profile') && !uid) {
+                // Note: The check !uid ensures we are on /profile (self) usually, but logic depends on routing. 
+                // isOwnProfile is reliable: (currentUser && targetUid === currentUser.uid).
+                // If we are looking at our own profile via /profile/MY_ID, we can still use context.
 
-                const achievements = data.achievements || [];
-                const starSeries = data.starSeries || [];
-                setStarSeriesIds(new Set(starSeries.map(s => s.id)));
-
-                const loadedFavs = data.favorites || [];
-
-                // Favorites Logic
-                const limitedFavs = loadedFavs.slice(0, 5);
-                const paddedFavs = [...limitedFavs, ...Array(Math.max(0, 5 - limitedFavs.length)).fill(null)].map(f => {
-                    if (!f) return null;
-                    return { ...f, isStar: starSeries.some(s => s.id === f.id) };
-                });
-                setFavorites(paddedFavs);
-
-                // Stats
-                const currentYear = new Date().getFullYear();
-                setStats({
-                    thisYear: achievements.filter(a => a.type === 'season_finish' && new Date(a.date).getFullYear() === currentYear).length,
-                    following: data.following?.length || 0,
-                    followers: data.followers?.length || 0
-                });
-
-                // Check Follow Status
-                if (currentUser && data.followers?.includes(currentUser.uid)) {
-                    setIsFollowing(true);
-                } else {
-                    setIsFollowing(false);
+                // However, AuthContext's userData might be null initially.
+                // We rely on AuthContext for updates.
+                if (currentUser) {
+                    // We don't need to do anything if we use prop/context derived state, 
+                    // BUT this component uses local state 'user', 'watchlist', etc.
+                    // We should sync local state with Context whenever Context updates.
+                    // See separate useEffect below.
+                    return;
                 }
             }
-        });
 
-        // Reviews (Query by userId)
-        const q = query(collection(db, 'reviews'), where('userId', '==', targetUid));
-        const unsubReviews = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-            setReviews(fetched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-        });
+            // 2. Other User Profile (One-time fetch to save reads, or onSnapshot if preferred. Plan said getDoc)
+            if (!isOwnProfile) {
+                try {
+                    const docRef = doc(db, 'users', targetUid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        setUser({ ...data, username: data.username || data.email?.split('@')[0] || 'User' });
+                        setProfilePhoto(data.photoURL || null);
+                        setWatchlist(data.watchlist || []);
+                        setLikes(data.likes || []);
+                        setWatched(data.watched || []);
+
+                        const achievements = data.achievements || [];
+                        const starSeries = data.starSeries || [];
+                        setStarSeriesIds(new Set(starSeries.map(s => s.id)));
+
+                        const loadedFavs = data.favorites || [];
+
+                        // Favorites Logic
+                        const limitedFavs = loadedFavs.slice(0, 5);
+                        const paddedFavs = [...limitedFavs, ...Array(Math.max(0, 5 - limitedFavs.length)).fill(null)].map(f => {
+                            if (!f) return null;
+                            return { ...f, isStar: starSeries.some(s => s.id === f.id) };
+                        });
+                        setFavorites(paddedFavs);
+
+                        // Stats
+                        const currentYear = new Date().getFullYear();
+                        setStats({
+                            thisYear: achievements.filter(a => a.type === 'season_finish' && new Date(a.date).getFullYear() === currentYear).length,
+                            totalSeasons: achievements.filter(a => a.type === 'season_finish').length,
+                            following: data.following?.length || 0,
+                            followers: data.followers?.length || 0
+                        });
+
+                        // Check Follow Status
+                        if (currentUser && data.followers?.includes(currentUser.uid)) {
+                            setIsFollowing(true);
+                        } else {
+                            setIsFollowing(false);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error fetching user profile:", e);
+                }
+            }
+        };
+
+        if (!isOwnProfile) {
+            loadProfile();
+        }
 
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) setShowMenu(false);
@@ -168,11 +192,92 @@ const Profile = () => {
         document.addEventListener('mousedown', handleClickOutside);
 
         return () => {
-            unsub();
-            unsubReviews();
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [targetUid]);
+    }, [targetUid, isOwnProfile, currentUser]); // Removed unsub logic from here for self
+
+    // Sync Self Data from Context
+    const { userData: authUserData } = useAuth(); // Global State
+
+    useEffect(() => {
+        if (isOwnProfile && authUserData) {
+            const data = authUserData;
+            setUser({ ...data, username: data.username || data.email?.split('@')[0] || 'User' });
+            setProfilePhoto(data.photoURL || null);
+            setWatchlist(data.watchlist || []);
+            setLikes(data.likes || []);
+            setWatched(data.watched || []);
+
+            const achievements = data.achievements || [];
+            const starSeries = data.starSeries || [];
+            setStarSeriesIds(new Set(starSeries.map(s => s.id)));
+
+            const loadedFavs = data.favorites || [];
+            // Favorites Logic
+            const limitedFavs = loadedFavs.slice(0, 5);
+            const paddedFavs = [...limitedFavs, ...Array(Math.max(0, 5 - limitedFavs.length)).fill(null)].map(f => {
+                if (!f) return null;
+                return { ...f, isStar: starSeries.some(s => s.id === f.id) };
+            });
+            setFavorites(paddedFavs);
+
+            // Stats
+            const currentYear = new Date().getFullYear();
+            setStats({
+                thisYear: achievements.filter(a => a.type === 'season_finish' && new Date(a.date).getFullYear() === currentYear).length,
+                totalSeasons: achievements.filter(a => a.type === 'season_finish').length,
+                following: data.following?.length || 0,
+                followers: data.followers?.length || 0
+            });
+        }
+    }, [isOwnProfile, authUserData]);
+
+    // Reviews Pagination Logic
+    const [lastReview, setLastReview] = useState(null);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [hasMoreReviews, setHasMoreReviews] = useState(true);
+
+    const fetchReviews = async (isInitial = false) => {
+        if (loadingReviews) return;
+        setLoadingReviews(true);
+        try {
+            let q = query(
+                collection(db, 'reviews'),
+                where('userId', '==', targetUid),
+                orderBy('createdAt', 'desc'), // Assuming 'createdAt' exists. Old code used 'date'? No, verify sort logic.
+                // Old code: sorted by new Date(b.createdAt) - new Date(a.createdAt). So field is createdAt.
+                limit(10)
+            );
+
+            if (!isInitial && lastReview) {
+                q = query(q, startAfter(lastReview));
+            }
+
+            const snap = await getDocs(q);
+            const fetched = snap.docs.map(d => ({ ...d.data(), id: d.id })); // .sort by desc usually handled by query
+
+            if (fetched.length < 10) setHasMoreReviews(false);
+
+            setLastReview(snap.docs[snap.docs.length - 1]);
+
+            if (isInitial) {
+                setReviews(fetched);
+            } else {
+                setReviews(prev => [...prev, ...fetched]);
+            }
+        } catch (e) {
+            console.error("Error fetching reviews:", e);
+        }
+        setLoadingReviews(false);
+    };
+
+    // Trigger Fetch on Tab Change
+    useEffect(() => {
+        if ((activeTab === 'Reviews' || activeTab === 'Activity') && reviews.length === 0 && hasMoreReviews) {
+            fetchReviews(true);
+        }
+    }, [activeTab, targetUid]);
+
 
     const { alert } = useNotification();
 
@@ -475,6 +580,7 @@ const Profile = () => {
                     return (
                         <div className="profile-content-col">
                             <div style={{ marginBottom: '3rem' }}>
+
                                 <h3 className="favorite-series-label" style={{ marginTop: '30px', marginBottom: '20px' }}>FAVORITE SERIES</h3>
                                 <div className="favorites-grid">
                                     {favorites.map((fav, index) => (
@@ -880,10 +986,13 @@ const Profile = () => {
                         grid-column: 1 / -1;
                         grid-row: 2;
                         width: 100%;
-                        justify-content: space-around; /* Even spacing */
-                        margin-top: 15px;
-                        margin-bottom: 15px; /* Space before Bio/Tabs */
-                        padding: 10px 0;
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr); /* Force 4 equal columns */
+                        justify-items: center;
+                        align-items: center;
+                        margin-top: 10px;
+                        margin-bottom: 10px; /* Space before Bio/Tabs */
+                        padding: 5px 0;
                         background: rgba(255,255,255,0.05); /* Subtle separation */
                         border-radius: 8px;
                     }
@@ -998,6 +1107,7 @@ const Profile = () => {
                         </div>
 
                         <div className="stats-container">
+                            <div className="stats-div" style={{ textAlign: 'center' }}><div className="stats-number">{stats.totalSeasons || 0}</div><div className="stats-label">SEASONS</div></div>
                             <div className="stats-div" style={{ textAlign: 'center' }}><div className="stats-number">{stats.thisYear}</div><div className="stats-label">THIS YEAR</div></div>
                             <Link to={`/profile/${targetUid}/followers`} className="stats-div" style={{ textAlign: 'center', textDecoration: 'none', cursor: 'pointer' }}>
                                 <div className="stats-number">{stats.followers}</div>
@@ -1008,6 +1118,12 @@ const Profile = () => {
                                 <div className="stats-label">FOLLOWING</div>
                             </Link>
                         </div>
+                        <style>{`
+                            @media (max-width: 768px) {
+                                .stats-label { font-size: 0.55rem !important; letter-spacing: 0px !important; }
+                                .stats-number { font-size: 1rem !important; } 
+                            }
+                        `}</style>
                         {user.bio && <div className="profile-bio">{user.bio}</div>}
                     </div>
                 </div>
@@ -1018,6 +1134,7 @@ const Profile = () => {
                             <div className="menu-dropdown">
                                 <label className="menu-item" style={{ cursor: 'pointer' }}>Edit Profile PFP<input type="file" hidden onChange={handleFileSelect} accept="image/*" /></label>
                                 <button className="menu-item" onClick={() => navigate('/edit-profile')}>Edit Profile Details</button>
+                                <button className="menu-item" onClick={() => navigate('/settings')}>Settings</button>
                             </div>
                         )}
                     </div>
@@ -1033,7 +1150,7 @@ const Profile = () => {
             </nav>
 
             <main style={{ minHeight: '400px' }}>{renderTabContent()}</main>
-        </div>
+        </div >
     );
 };
 

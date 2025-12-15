@@ -7,11 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 
+
 const TMDB_API_KEY = "3fd2be6f0c70a2a598f084ddfb75487c";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 const EpisodeDetails = () => {
-    const { id, seasonNumber, episodeNumber } = useParams();
+    const { id, seasonNumber, episodeNumber } = useParams(); // id is Series ID
     const navigate = useNavigate();
     const { confirm } = useNotification();
     const { currentUser } = useAuth();
@@ -77,21 +78,23 @@ const EpisodeDetails = () => {
                 }
 
                 // Fetch Episode Reviews (if available separately, otherwise can fallback to show reviews)
-                // TMDB doesn't have a direct "episode reviews" endpoint often populated, but let's try generic or just use the UI structure requested.
-                // Actually TMDB DOES have GET /tv/{series_id}/season/{season_number}/episode/{episode_number}/translations etc, but reviews might be at series level.
-                // Let's assume we fetch series reviews or standard reviews if user wants "real reviews of that series".
-                // The prompt says "use the real reviews of that series and the episodes...".
-                // For this page, showing SERIES reviews might be confusing, but checking if specific episode reviews exist.
-                // Let's try to fetch series reviews as a fallback or context.
                 const reviewsRes = await fetch(`${TMDB_BASE_URL}/tv/${id}/reviews?api_key=${TMDB_API_KEY}`);
                 const reviewsData = await reviewsRes.json();
                 setTmdbReviews(reviewsData.results || []);
 
-                // Fetch Firestore Reviews (for App Ratings and Drawer)
-                const reviewsQuery = query(collection(db, 'reviews'), where('tmdbId', '==', parseInt(id)));
-                const reviewsSnap = await getDocs(reviewsQuery);
-                const dbReviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setFirestoreReviews(dbReviews);
+                // Fetch Firestore Reviews (Specific to Episode)
+                if (data.id) {
+                    const reviewsQuery = query(
+                        collection(db, 'reviews'),
+                        where('episodeId', '==', data.id),
+                        where('isEpisode', '==', true)
+                    );
+                    const reviewsSnap = await getDocs(reviewsQuery);
+                    const dbReviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setFirestoreReviews(dbReviews);
+                }
+
+
 
             } catch (error) {
                 console.error("Failed to fetch episode details", error);
@@ -161,17 +164,8 @@ const EpisodeDetails = () => {
                         </span>
                     </div>
 
-                    {/* Episode Ratings (External + App) */}
+                    {/* Episode Ratings */}
                     <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
-                        {/* External Ratings REMOVED */}
-                        {/* 
-                        {ratings.filter(r => (r.Source === "Internet Movie Database" || r.Source === "Rotten Tomatoes") && r.Value && r.Value !== 'N/A' && r.Value !== 'N/A/10').map((rating, index) => {
-                             // ... removed
-                             return null;
-                        })}
-                        */}
-
-                        {/* App Ratings Logic for Episode */}
                         {(() => {
                             // Filter for THIS episode from Firestore Data
                             const epReviews = firestoreReviews.filter(r => r.episodeId === parseInt(episode.id) && r.isEpisode);
@@ -190,7 +184,7 @@ const EpisodeDetails = () => {
                             );
                         })()}
 
-                        {firestoreReviews.filter(r => r.episodeId === parseInt(episode.id) && r.isEpisode).length === 0 && (
+                        {firestoreReviews.length === 0 && (
                             <div style={{ background: 'rgba(0,0,0,0.7)', padding: '4px 10px', borderRadius: '4px', border: '1px dashed #666', color: '#ccc', fontStyle: 'italic', fontSize: '0.9rem' }}>
                                 Be the first to rate! 😢
                             </div>
@@ -220,7 +214,7 @@ const EpisodeDetails = () => {
                             letterSpacing: '1px'
                         }}
                     >
-                        <MdRateReview size={20} /> Series Reviews
+                        <MdRateReview size={20} /> Episode Reviews
                     </button>
                 </div>
 
@@ -293,7 +287,7 @@ const EpisodeDetails = () => {
                     if (!currentUser) return;
                     const reviewRef = doc(db, 'reviews', reviewId);
 
-                    // Update Local State (Optimistic)
+                    // Optimistic Update
                     setFirestoreReviews(prev => prev.map(r => {
                         if (r.id === reviewId) {
                             const hasLiked = r.likes?.includes(currentUser.uid);
@@ -305,10 +299,9 @@ const EpisodeDetails = () => {
                         return r;
                     }));
 
-                    const reviewDoc = await getDoc(reviewRef);
-                    if (reviewDoc.exists()) {
-                        const data = reviewDoc.data();
-                        const hasLiked = data.likes?.includes(currentUser.uid);
+                    const review = firestoreReviews.find(r => r.id === reviewId);
+                    if (review) {
+                        const hasLiked = review.likes?.includes(currentUser.uid);
                         if (hasLiked) {
                             await updateDoc(reviewRef, { likes: arrayRemove(currentUser.uid) });
                         } else {

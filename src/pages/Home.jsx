@@ -1,52 +1,71 @@
 import { useState, useEffect } from 'react';
 import { MdStarBorder, MdPlayArrow } from 'react-icons/md';
 import { TbTrendingUp } from 'react-icons/tb';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import PosterBadge from '../components/PosterBadge';
 import './Home.css';
+import './Home_Trending.css';
+import { trendingMoments } from '../data/trendingMomentsData';
 
 const Home = () => {
   const [trendingSeries, setTrendingSeries] = useState([]);
   const [topRatedSeries, setTopRatedSeries] = useState([]);
   const [newSeries, setNewSeries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const [starSeriesIds, setStarSeriesIds] = useState(new Set());
+  const navigate = useNavigate();
   const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '05587a49bd4890a9630d6c0e544e0f6f';
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
   // Hero Carousel State
-  const [heroIndex, setHeroIndex] = useState(0);
 
-  // Auto Swipe Hero
+
+  // Trending Moments State
+  const [momentIndex, setMomentIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  // Filter moments: Show if series is in ANY fetched list (Trending, Top Rated, or New)
+  // This ensures better coverage so rotation actually happens.
+  const allFetchedSeries = [...trendingSeries, ...topRatedSeries, ...newSeries];
+  const activeMoments = trendingMoments.filter(moment =>
+    allFetchedSeries.some(s => s.id === moment.id)
+  );
+
+  // Auto Rotate Moments with Fade Effect
   useEffect(() => {
-    if (trendingSeries.length === 0) return;
+    // Only rotate if we have more than 1 moment
+    if (activeMoments.length <= 1) return;
+
     const interval = setInterval(() => {
-      setHeroIndex(prev => (prev + 1) % trendingSeries.length);
-    }, 3000); // 3 Seconds
+      // 1. Fade Out
+      setIsFading(true);
+
+      // 2. Switch Content after Fade Out duration (matches CSS 0.5s)
+      setTimeout(() => {
+        setMomentIndex(prev => (prev + 1) % activeMoments.length);
+
+        // 3. Fade In (allow small buffer for DOM update)
+        requestAnimationFrame(() => {
+          setIsFading(false);
+        });
+      }, 500); // 500ms match CSS transition
+
+    }, 5000); // 5 seconds display time
+
     return () => clearInterval(interval);
-  }, [trendingSeries]);
+  }, [activeMoments.length]);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (userData?.starSeries) {
+      setStarSeriesIds(new Set(userData.starSeries.map(s => s.id)));
+    } else {
       setStarSeriesIds(new Set());
-      return;
     }
-
-    const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        const stars = docSnap.data().starSeries || [];
-        setStarSeriesIds(new Set(stars.map(s => s.id)));
-      }
-    }, (error) => {
-      console.error("Error watching stars:", error);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
+  }, [userData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,8 +75,6 @@ const Home = () => {
           fetch(`${TMDB_BASE_URL}/tv/top_rated?api_key=${TMDB_API_KEY}`).then(r => r.json()),
           fetch(`${TMDB_BASE_URL}/tv/airing_today?api_key=${TMDB_API_KEY}`).then(r => r.json())
         ]);
-
-
 
         setTrendingSeries(trending.results.slice(0, 12));
         setTopRatedSeries(topRated.results.slice(0, 12));
@@ -74,40 +91,28 @@ const Home = () => {
 
   const SeriesCard = ({ series }) => {
     if (!series) return null;
+
     return (
-      <div className="series-card-container" style={{ paddingTop: '25px', paddingLeft: '25px', transition: 'padding 0.3s' }}>
-        <Link to={`/tv/${series.id}`} className="series-card" style={{ position: 'relative', overflow: 'visible', textDecoration: 'none', color: 'inherit' }}>
+      <div className="series-card-container">
+        <Link to={`/tv/${series.id}`} className="series-card">
           {starSeriesIds.has(series.id) && <PosterBadge />}
-          <img
-            className="series-poster"
-            src={series.poster_path ? `https://image.tmdb.org/t/p/w500${series.poster_path}` : (series.backdrop_path ? `https://image.tmdb.org/t/p/w500${series.backdrop_path}` : 'https://via.placeholder.com/200x300/141414/FFFF00?text=No+Image')}
-            alt={series.name}
-            draggable={false} // Prevent ghost dragging
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'block',
-              width: '100%',
-              // Force Vertical Aspect Ratio
-              aspectRatio: '2/3',
-              height: 'auto',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              userSelect: 'none' // Disable selection
-            }}
-            onError={(e) => {
-              e.target.src = `https://via.placeholder.com/200x300/141414/FFFF00?text=${series.name}`;
-            }}
-          />
-          <div className="series-info">
-            <div className="series-title">
-              {series.name}
-            </div>
+          <div className="series-poster-wrapper">
+            <img
+              className="series-poster"
+              src={series.poster_path ? `https://image.tmdb.org/t/p/w500${series.poster_path}` : (series.backdrop_path ? `https://image.tmdb.org/t/p/w500${series.backdrop_path}` : 'https://via.placeholder.com/200x300/141414/FFFF00?text=No+Image')}
+              alt={series.name}
+              draggable={false}
+              onError={(e) => {
+                e.target.src = `https://via.placeholder.com/200x300/141414/FFFF00?text=${series.name}`;
+              }}
+            />
           </div>
         </Link>
       </div>
     );
   };
+
+  const currentMoment = activeMoments[momentIndex];
 
   return (
     <>
@@ -118,22 +123,53 @@ const Home = () => {
           {/* HERO SPLIT SECTION */}
           {/* HERO VERTICAL SECTION */}
           <div className="hero-vertical-section">
-            {/* TEXT STACK (Top) */}
-            {/* TEXT STACK (Top) */}
-            <div className="hero-text-stack">
-              <h1 className="hero-title-primary">FIND MOVIES</h1>
-              <h1 className="hero-title-gradient blue">TV SHOWS</h1>
-              <h1 className="hero-title-gradient pink">AND MORE</h1>
-            </div>
+            {/* TRENDING MOMENT CARD (Conditional) */}
+            {activeMoments.length > 0 && currentMoment && (
+              <div className="trending-moments-container">
+                <div
+                  className={`trending-moment-card ${isFading ? 'fading' : ''}`}
+                  /* Key removed to prevent unmount, allowing smooth opacity transition */
+                  style={{
+                    display: 'flex',
+                    '--accent-color': currentMoment.accent
+                  }}
+                  onClick={() => navigate(`/tv/${currentMoment.id}`)}
+                >
+                  {/* Left Poster */}
+                  <div className="moment-poster-wrapper">
+                    <img
+                      src={`https://image.tmdb.org/t/p/w342${currentMoment.poster_path}`}
+                      alt={currentMoment.title}
+                      className="moment-poster"
+                    />
+                  </div>
+
+                  {/* Right Content */}
+                  <div className="moment-content">
+                    <div className="moment-label">Trending Moment</div>
+                    <div className="moment-quote">
+                      "{currentMoment.quote}"
+                    </div>
+                    <div className="moment-source">
+                      {currentMoment.title}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Note: Previous Hero Text Stack Removed */}
 
             {/* POSTER (Bottom) */}
             {/* POSTER REMOVED */}
           </div>
 
+          {/* Continue Watching Section */}
+
+
           {/* Trending Series Section */}
           <section className="section">
             <h2 className="section-title">
-              <TbTrendingUp style={{ display: 'inline', marginRight: '10px', color: '#ffd900ff' }} />
               Trending Series
             </h2>
             <div className="series-row">
@@ -146,7 +182,6 @@ const Home = () => {
           {/* Top Rated Series Section */}
           <section className="section">
             <h2 className="section-title">
-              <MdStarBorder style={{ display: 'inline', marginRight: '10px', color: '#ffd900ff' }} />
               Highest Rated Series
             </h2>
             <div className="series-row">

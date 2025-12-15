@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MdStar, MdDelete, MdShare, MdEdit } from 'react-icons/md';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,55 +6,112 @@ import { db } from '../firebase-config';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 import { Link } from 'react-router-dom';
-import StoryCard from '../components/StoryCard';
+import StorySticker from '../components/StorySticker';
 import ShareModal from '../components/ShareModal';
 import ReviewModal from '../components/ReviewModal';
-import { useStoryGenerator } from '../hooks/useStoryGenerator';
+import LoadingPopup from '../components/LoadingPopup';
+import html2canvas from 'html2canvas';
 import './Home.css';
 
 const UserReview = () => {
     const { currentUser } = useAuth();
     const [reviews, setReviews] = useState([]);
-    const { generateStory, storyCardRef, isGenerating } = useStoryGenerator();
-    const [storyData, setStoryData] = useState(null);
-    const [shareModal, setShareModal] = useState({ isOpen: false, imageUrl: '' });
+    const [editModal, setEditModal] = useState({ isOpen: false, review: null });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, reviewId: null, tmdbId: null, isSeries: false });
 
-    // Custom Delete Modal State
-    const [deleteModal, setDeleteModal] = useState({
-        isOpen: false,
-        reviewId: null,
-        isSeries: false
-    });
 
-    // Edit Modal State
-    const [editModal, setEditModal] = useState({
-        isOpen: false,
-        review: null
-    });
+    // Sticker Logic
+    const [stickerModalOpen, setStickerModalOpen] = useState(false);
+    const [stickerStatus, setStickerStatus] = useState('idle');
+    const [stickerData, setStickerData] = useState(null);
+    const [generatedStickerImage, setGeneratedStickerImage] = useState(null);
+    const stickerRef = useRef(null);
 
-    // Trigger generation when storyData is updated and component is ready
-    useEffect(() => {
-        if (storyData) {
-            const timer = setTimeout(async () => {
-                const result = await generateStory(storyData.movie.name);
-                if (result && result.success && result.method === 'fallback') {
-                    setShareModal({ isOpen: true, imageUrl: result.url });
+    const generateSticker = async () => {
+        if (!stickerRef.current) return;
+        setStickerStatus('preparing');
+
+        // CRITICAL FIX: Wait for images to load before capture
+        await new Promise(r => setTimeout(r, 100));
+
+        // Wait for both images
+        const waitForImages = async () => {
+            const maxWait = 4000;
+            const startTime = Date.now();
+
+            while (Date.now() - startTime < maxWait) {
+                const posterLoaded = stickerRef.current?.getAttribute('data-poster-loaded') === 'true';
+                const pfpLoaded = stickerRef.current?.getAttribute('data-pfp-loaded') === 'true';
+
+                if (posterLoaded && pfpLoaded) return true;
+                await new Promise(r => setTimeout(r, 50));
+            }
+
+            console.warn('Image load timeout');
+            return false;
+        };
+
+        await waitForImages();
+        await new Promise(r => setTimeout(r, 400)); // Mobile font/layout delay
+
+        try {
+            const canvas = await html2canvas(stickerRef.current, {
+                useCORS: true, scale: 2, backgroundColor: null, width: 1080, height: 1920,
+                logging: false, allowTaint: false,
+                onclone: (clonedDoc) => {
+                    const el = clonedDoc.getElementById('story-sticker-element');
+                    if (el) { el.style.display = 'flex'; el.style.transform = 'none'; }
                 }
-            }, 500);
-            return () => clearTimeout(timer);
+            });
+            canvas.toBlob((blob) => {
+                if (!blob) return;
+                setGeneratedStickerImage(URL.createObjectURL(blob));
+                setStickerStatus('ready');
+            }, 'image/png');
+        } catch (e) {
+            console.error(e);
+            setStickerStatus('idle');
         }
-    }, [storyData, generateStory]);
+    };
+
+    useEffect(() => {
+        if (stickerModalOpen && stickerData && stickerStatus === 'idle') {
+            generateSticker();
+        }
+    }, [stickerModalOpen, stickerData, stickerStatus]);
+
+    const handleShareSticker = async () => {
+        if (!generatedStickerImage) return;
+        try {
+            const blob = await fetch(generatedStickerImage).then(r => r.blob());
+            const file = new File([blob], `Share_${Date.now()}.png`, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file] });
+            } else {
+                const a = document.createElement('a');
+                a.href = generatedStickerImage; a.download = file.name;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const closeStickerModal = () => {
+        setStickerModalOpen(false); setStickerStatus('idle'); setGeneratedStickerImage(null); setStickerData(null);
+    };
 
     const handleShare = (reviewItem, isSeries = true) => {
-        setStoryData({
+        setStickerData({
             movie: {
                 name: reviewItem.name,
-                poster_path: reviewItem.poster_path
+                poster_path: reviewItem.poster_path, // Fallback if needed
+                seasonEpisode: reviewItem.isEpisode ? `S${reviewItem.seasonNumber} E${reviewItem.episodeNumber}` : (reviewItem.isSeason ? `S${reviewItem.seasonNumber}` : null)
             },
             rating: reviewItem.rating,
-            review: reviewItem.review,
-            user: { handle: '@yourapp' }
+            user: currentUser,
+            isEpisodes: reviewItem.isEpisode
         });
+        setStickerModalOpen(true);
+        setStickerStatus('idle');
     };
 
     useEffect(() => {
@@ -270,37 +327,40 @@ const UserReview = () => {
                 </div>
             )}
 
-            {/* Hidden Story Card for Generation */}
-            <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
-                {storyData && (
-                    <StoryCard
-                        ref={storyCardRef}
-                        movie={storyData.movie}
-                        rating={storyData.rating}
-                        review={storyData.review}
-                        user={storyData.user}
-                    />
-                )}
-            </div>
-
-            {isGenerating && (
+            {/* NEW STORY STICKER MODAL */}
+            {stickerModalOpen && (
                 <div style={{
-                    position: 'fixed', top: '20px', right: '20px',
-                    background: '#FFCC00', color: 'black', padding: '10px 20px',
-                    borderRadius: '4px', fontWeight: 'bold', zIndex: 9999,
-                    display: 'flex', alignItems: 'center', gap: '8px'
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.95)', zIndex: 10000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexDirection: 'column'
                 }}>
-                    <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid black', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    Preparing Story...
-                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                    {stickerStatus === 'preparing' && <LoadingPopup />}
+                    {stickerStatus === 'ready' && generatedStickerImage && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', maxWidth: '400px' }}>
+                                <img src={generatedStickerImage} style={{ width: '100%', borderRadius: '16px' }} />
+                            </div>
+                            <div style={{ padding: '30px', display: 'flex', gap: '20px', width: '100%', justifyContent: 'center', background: '#000' }}>
+                                <button onClick={closeStickerModal} style={{ background: '#333', color: 'white', padding: '16px 32px', borderRadius: '50px', border: 'none' }}>Close</button>
+                                <button onClick={handleShareSticker} style={{ background: '#FFD600', color: 'black', padding: '16px 32px', borderRadius: '50px', border: 'none', fontWeight: 'bold' }}>Share</button>
+                            </div>
+                        </div>
+                    )}
+                    {/* Hidden Render Target (Using opacity 0 to ensure images load) */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1000, width: '1080px', height: '1920px', overflow: 'hidden' }}>
+                        {stickerData && (
+                            <StorySticker
+                                ref={stickerRef}
+                                movie={stickerData.movie}
+                                rating={stickerData.rating}
+                                user={stickerData.user}
+                                isEpisodes={stickerData.isEpisodes}
+                            />
+                        )}
+                    </div>
                 </div>
             )}
-
-            <ShareModal
-                isOpen={shareModal.isOpen}
-                onClose={() => setShareModal({ ...shareModal, isOpen: false })}
-                imageUrl={shareModal.imageUrl}
-            />
 
             <ReviewModal
                 isOpen={editModal.isOpen}

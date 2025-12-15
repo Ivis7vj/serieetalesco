@@ -1,16 +1,36 @@
+:root {
+  --bg-primary: #000000;
+  /* AMOLED Black */
+  --bg-secondary: #050505;
+  /* Slightly lighter for sections */
+  --accent-color: #FFD600;
+  /* Prime Yellow */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --border-color: #1a1a1a;
+  --card-shadow: rgba(0, 0, 0, 0.8);
+  --overlay-gradient: linear-gradient(to top, rgba(0, 0, 0, 0.95) 20%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
+}
+
 .home-container {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Segoe UI', 'Arial', sans-serif;
+  /* Clean Body Text */
   display: flex;
   flex-direction: column;
-  /* overflow: hidden; Removed to allow scrolling */
   overflow-y: auto;
-  /* Enable vertical scroll */
   -webkit-overflow-scrolling: touch;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.3s;
+
+  /* Safe Area Padding */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 /* Header Styles */
@@ -253,12 +273,13 @@
 }
 
 .hero-title {
-  font-size: 64px;
-  font-weight: 900;
+  font-size: 42px;
+  font-weight: 800;
   line-height: 1.1;
   margin-bottom: 20px;
   text-transform: uppercase;
   color: var(--text-primary);
+  letter-spacing: 1px;
 }
 
 .hero-meta {
@@ -272,8 +293,8 @@
 }
 
 .hero-description {
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--text-secondary);
   margin-bottom: 30px;
   display: -webkit-box;
@@ -281,6 +302,8 @@
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 500px;
+  /* Limit width for readability */
 }
 
 .hero-buttons {
@@ -289,9 +312,9 @@
 }
 
 .btn {
-  padding: 12px 30px;
+  padding: 10px 24px;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -323,27 +346,31 @@
 
 /* Rows / Sections */
 .section {
-  padding: 20px 0 20px 60px;
-  margin-bottom: 10px;
+  padding: 5px 0 5px 60px;
+  /* Reduced from 20px */
+  margin-bottom: 0;
+  /* Reduced from 10px */
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 900;
   color: #fff;
-  margin-bottom: 20px;
+  margin-bottom: 2px;
+  /* Reduced from 20px */
   display: flex;
   align-items: center;
-  font-family: 'Anton', 'Impact', sans-serif;
+  font-family: 'Inter', sans-serif;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
 }
 
 .series-row {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 20px 60px 40px 60px;
+  padding: 10px 60px 20px 60px;
+  /* Reduced from 20/40 */
   /* Increased top/bottom padding for hover scale */
   scroll-behavior: smooth;
   touch-action: pan-x;
@@ -363,57 +390,58 @@
   /* Firefox */
 }
 
+/* Series Card Refined */
+.series-card-container {
+  /* Default width managed by media query mostly, but base needs setting */
+  flex: 0 0 auto;
+  padding: 30px 10px;
+  /* Space for hover expansion */
+  width: 200px;
+  /* Base Desktop Width */
+  transition: width 0.3s;
+}
+
 .series-card {
   width: 100%;
-  height: auto;
-  background-color: transparent;
-  border-radius: 4px;
-  /* Slight rounding like Netflix */
-  overflow: visible;
-  cursor: pointer;
-  transition: transform 0.3s;
+  display: block;
   position: relative;
-  border: none;
-  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
+  overflow: visible;
+  /* Allow scale outside */
 }
 
-.series-card:hover {
-  transform: scale(1.15);
-  /* Smooth expansion */
-  z-index: 100 !important;
-  box-shadow: 0 10px 30px var(--card-shadow);
+.series-poster-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: 8px;
+  /* Smooth rounded corners */
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.3s ease;
+  z-index: 10;
 }
-
 
 .series-poster {
   width: 100%;
-  aspect-ratio: 2/3;
-  /* Landscape ratio */
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  /* Square Border */
-  border: none;
-  /* Visual Border */
   display: block;
 }
 
-.series-card:hover .series-poster {
-  border-color: var(--accent-color);
+/* Hover Interaction (Desktop Only) */
+@media (hover: hover) {
+  .series-card:hover .series-poster-wrapper {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(255, 214, 0, 0.15);
+    /* Soft yellow glow */
+    z-index: 50;
+    border: 2px solid rgba(255, 214, 0, 0.1);
+  }
 }
 
-.series-info {
-  margin-top: 10px;
-}
-
-.series-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-primary);
-}
+/* Overlay Removed per User Request */
 
 .series-meta {
   display: flex;
@@ -572,8 +600,9 @@
 
   /* Large Posters Logic */
   .series-row {
-    padding: 10px 20px 30px 20px;
-    gap: 15px;
+    padding: 5px 20px 15px 20px;
+    /* Tight mobile padding */
+    gap: 10px;
   }
 
   .series-card-container {
@@ -583,6 +612,15 @@
 
   .section {
     padding-left: 20px;
+    padding-top: 10px;
+    padding-bottom: 0;
+  }
+
+  .section-title {
+    font-size: 0.95rem;
+    /* Smaller mobile title */
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
   }
 }
 
@@ -756,6 +794,11 @@
   .profile-nav-responsive button {
     padding: 10px 15px !important;
     font-size: 0.8rem !important;
+  }
+
+  /* Hide Watchlist on Mobile Footer */
+  .watchlist-link {
+    display: none !important;
   }
 }
 

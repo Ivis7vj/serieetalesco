@@ -1,4 +1,4 @@
-import { MdHome, MdStarBorder, MdAdd, MdPublic } from 'react-icons/md';
+import { MdHome, MdStarBorder, MdAdd, MdPublic, MdPeople } from 'react-icons/md';
 import { CgProfile } from 'react-icons/cg';
 import { IoSettingsOutline } from 'react-icons/io5';
 
@@ -18,6 +18,15 @@ const Sidebar = ({ onLogout }) => {
                     <span className="sidebar-text">Home</span>
                 </NavLink>
                 <NavLink
+                    to="/news"
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                    style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
+                >
+                    <MdPublic size={28} />
+                    <span className="sidebar-text">News</span>
+                </NavLink>
+
+                <NavLink
                     to="/reviews"
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                     style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
@@ -27,7 +36,7 @@ const Sidebar = ({ onLogout }) => {
                 </NavLink>
                 <NavLink
                     to="/watchlist"
-                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                    className={({ isActive }) => `sidebar-link watchlist-link ${isActive ? 'active' : ''}`}
                     style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
                 >
                     <MdAdd size={28} />
@@ -43,22 +52,12 @@ const Sidebar = ({ onLogout }) => {
                 </NavLink>
 
                 <NavLink
-                    to="/settings"
+                    to="/friends"
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                    style={({ isActive }) => ({
-                        color: isActive ? '#fff' : '#888', // Highlight white when active, muted gray otherwise
-                        textDecoration: 'none',
-                        background: isActive ? '#000' : 'transparent', // Pure black bg when active
-                        fontWeight: '700', // Rich Bold
-                        fontFamily: 'Arial, sans-serif',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px'
-                    })}
+                    style={({ isActive }) => ({ color: isActive ? 'var(--accent-color)' : 'var(--text-muted)', textDecoration: 'none' })}
                 >
-                    <IoSettingsOutline size={28} />
-                    <span className="sidebar-text" style={{ fontSize: '1rem' }}>Settings</span>
+                    <MdPeople size={28} />
+                    <span className="sidebar-text">Friends</span>
                 </NavLink>
             </nav>
         </aside>

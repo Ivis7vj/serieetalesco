@@ -3,9 +3,10 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { MdHistory, MdCheck } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
-import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import PosterBadge from '../components/PosterBadge';
 import './Home.css';
+import './Search.css';
 
 const Search = () => {
     const location = useLocation();
@@ -31,7 +32,7 @@ const Search = () => {
     const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
     // Auth for unique storage
-    const { currentUser } = useAuth();
+    const { currentUser, userData } = useAuth();
     const storageKey = currentUser ? `recentSearches_${currentUser.uid}` : 'recentSearches_guest';
 
     useEffect(() => {
@@ -44,23 +45,12 @@ const Search = () => {
     }, [currentUser, storageKey]);
 
     useEffect(() => {
-        if (!currentUser) {
+        if (userData?.starSeries) {
+            setStarSeriesIds(new Set(userData.starSeries.map(s => s.id)));
+        } else {
             setStarSeriesIds(new Set());
-            return;
         }
-
-        const userRef = doc(db, 'users', currentUser.uid);
-        const unsubscribe = onSnapshot(userRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const stars = docSnap.data().starSeries || [];
-                setStarSeriesIds(new Set(stars.map(s => s.id)));
-            }
-        }, (error) => {
-            console.error("Error watching stars:", error);
-        });
-
-        return () => unsubscribe();
-    }, [currentUser]);
+    }, [userData]);
 
     useEffect(() => {
         if (query) {
@@ -81,6 +71,8 @@ const Search = () => {
     };
 
     const [genreSearchData, setGenreSearchData] = useState(null); // { trending: [], underrated: [], genreName: '' }
+    // Related Series State
+    const [relatedSeries, setRelatedSeries] = useState([]);
 
     const GENRES_MAP = {
         'action': 10759, 'adventure': 10759,
@@ -97,11 +89,13 @@ const Search = () => {
         setLoading(true);
         setGenreSearchData(null);
         setResults([]);
+        setRelatedSeries([]); // Reset
 
         const lowerQ = query.toLowerCase().trim();
         const genreId = GENRES_MAP[lowerQ];
 
         try {
+            let currentResults = [];
             if (genreId) {
                 // Genre Search
                 const [trending, underrated] = await Promise.all([
@@ -113,16 +107,71 @@ const Search = () => {
                     trending: trending.results || [],
                     underrated: underrated.results || []
                 });
+                // For genre search, we don't have a single "Top Result" in the same way, but let's assume standard behavior for now across search types if needed.
+                // But Prompt specifically implies "Top Result" from search results. 
+                // If genre search, `results` stays empty in current logic? 
+                // The current logic sets `results` only in "Normal Search".
+                // Let's stick to modifying the Normal Search flow mostly, or unify if needed.
+                // The Prompt says "When screen width is mobile... Top Result card...".
+                // Logic below handles "Normal Search" results.
             } else {
                 // Normal Search
                 const response = await fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
                 const data = await response.json();
-                setResults(data.results || []);
+                currentResults = data.results || [];
+                setResults(currentResults);
+
+                // Fetch Related Series if we have a top result
+                if (currentResults.length > 0) {
+                    await fetchRelatedSeries(currentResults[0]);
+                }
             }
             setLoading(false);
         } catch (error) {
             console.error("Search failed", error);
             setLoading(false);
+        }
+    };
+
+    const fetchRelatedSeries = async (topItem) => {
+        if (!topItem || !topItem.genre_ids) return;
+
+        try {
+            // Logic: 
+            // 1. Genre IDs
+            let genreIds = topItem.genre_ids;
+            let sortBy = 'popularity.desc';
+
+            // Mood Filtering Logic
+            // Animation -> Animation Only
+            if (genreIds.includes(16)) {
+                genreIds = [16];
+            }
+
+            // High Rating (> 8) -> Serious Tone (? Use Rating Sort)
+            // Serious/Drama logic could be implied by rating sort.
+            if (topItem.vote_average >= 8) {
+                sortBy = 'vote_average.desc';
+            }
+
+            // Comedy -> Light Tone (Usually just Comedy genre is enough)
+
+            const genreQuery = genreIds.join(',');
+
+            const url = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreQuery}&sort_by=${sortBy}&vote_count.gte=100`;
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.results) {
+                // Filter out the top result
+                const filtered = data.results
+                    .filter(item => item.id !== topItem.id)
+                    .slice(0, 12); // Limit to 12
+                setRelatedSeries(filtered);
+            }
+        } catch (e) {
+            console.error("Failed to fetch related", e);
         }
     };
 
@@ -132,38 +181,35 @@ const Search = () => {
         if (selectForFavorite) {
             e.preventDefault();
 
-            if (!currentUser) return; // Should be protected, but safe guard
+            if (!currentUser || !userData) return;
 
             try {
-                // Fetch current user favorites
+                // Use userData directly to save a read
                 const userRef = doc(db, 'users', currentUser.uid);
-                const userSnap = await getDoc(userRef);
+                let currentFavs = userData.favorites || [null, null, null, null, null];
 
-                if (userSnap.exists()) {
-                    let currentFavs = userSnap.data().favorites || [null, null, null, null, null];
-
-                    // Duplicate Check
-                    const isDuplicate = currentFavs.some((fav, idx) => fav && fav.id === item.id && idx !== slotIndex);
-                    if (isDuplicate) {
-                        setDuplicateAlert(true);
-                        setTimeout(() => setDuplicateAlert(false), 2000);
-                        return; // Stop processing
-                    }
-
-                    // Animation Trigger (Only if not duplicate)
-                    setShowSuccess(true);
-
-                    // Ensure standard length
-                    if (currentFavs.length < 5) {
-                        currentFavs = [...currentFavs, ...Array(5 - currentFavs.length).fill(null)];
-                    }
-
-                    // Update specific slot
-                    currentFavs[slotIndex] = item;
-
-                    // Save back
-                    await updateDoc(userRef, { favorites: currentFavs });
+                // Duplicate Check
+                const isDuplicate = currentFavs.some((fav, idx) => fav && fav.id === item.id && idx !== slotIndex);
+                if (isDuplicate) {
+                    setDuplicateAlert(true);
+                    setTimeout(() => setDuplicateAlert(false), 2000);
+                    return; // Stop processing
                 }
+
+                // Animation Trigger (Only if not duplicate)
+                setShowSuccess(true);
+
+                // Ensure standard length
+                if (currentFavs.length < 5) {
+                    currentFavs = [...currentFavs, ...Array(5 - currentFavs.length).fill(null)];
+                }
+
+                // Update specific slot
+                const newFavs = [...currentFavs];
+                newFavs[slotIndex] = item;
+
+                // Save back
+                await updateDoc(userRef, { favorites: newFavs });
             } catch (err) {
                 console.error("Failed to save favorite", err);
             }
@@ -175,36 +221,38 @@ const Search = () => {
         }
     };
 
+    // Logic for Tiers
+    const topResult = results.length > 0 ? results[0] : null;
+
+    // Filter "Exact Matches" - loosely matches title or heavily related.
+    // Logic: Same words, excluding Top Result.
+    // Actually TMDB returns sorted by relevance. Let's just take next 5 as "Close Matches"
+    const exactMatches = results.length > 1
+        ? results.slice(1, 7) // Take 2nd to 7th items
+        : [];
+
+    // "Related Discovery" REPLACED by relatedSeries state
+
     return (
-        <div className="section" style={{ position: 'relative' }}>
-            {/* Success Popup */}
+        <div className="section" style={{ position: 'relative', minHeight: '100vh', background: '#000' }}>
+            {/* Background pure black enforced inline just in case */}
             {showSuccess && (
                 <div style={{
-                    position: 'fixed',
-                    top: 0, left: 0, width: '100%', height: '100%',
-                    background: 'rgba(0,0,0,0.8)',
-                    zIndex: 2000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.8)', zIndex: 2000,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     animation: 'fadeIn 0.3s ease-out'
                 }}>
                     <div style={{
-                        width: '100px', height: '100px',
-                        borderRadius: '50%',
-                        background: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        marginBottom: '20px',
+                        width: '100px', height: '100px', borderRadius: '50%', background: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px',
                         animation: 'popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                     }}>
                         <MdCheck size={60} color="#000" />
                     </div>
-                    <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 'bold', animation: 'fadeIn 1s ease-out' }}>Added to Favorites</h2>
+                    <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 'bold' }}>Added to Favorites</h2>
                 </div>
             )}
-
-            {/* Duplicate Alert */}
             {duplicateAlert && (
                 <div style={{
                     position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)',
@@ -216,26 +264,13 @@ const Search = () => {
                 </div>
             )}
 
-            <style>
-                {`
-                @keyframes popIn {
-                    0% { transform: scale(0); opacity: 0; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                `}
-            </style>
-
             {!query ? (
-                // Show Recent Searches when no query
-                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                // RECENT SEARCHES UI (Unchanged Layout, just ensured wrapper)
+                <div style={{ maxWidth: '600px', margin: '40px auto', padding: '0 20px' }}>
                     <h3 style={{ color: '#666', marginBottom: '1rem', fontSize: '0.9rem', letterSpacing: '1px' }}>RECENT SEARCHES</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {recentSearches.length > 0 ? recentSearches.map((term, i) => (
-                            <Link key={i} to={`/search?q=${encodeURIComponent(term)}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ccc', textDecoration: 'none', padding: '10px', background: '#111', border: '1px solid #222' }}>
+                            <Link key={i} to={`/search?q=${encodeURIComponent(term)}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ccc', textDecoration: 'none', padding: '15px', background: '#111', border: '1px solid #222', borderRadius: '4px' }}>
                                 <MdHistory color="#666" />
                                 {term}
                             </Link>
@@ -245,145 +280,89 @@ const Search = () => {
                     </div>
                 </div>
             ) : (
-                <>
-                    {genreSearchData ? (
-                        // GENRE SEARCH UI
-                        <div>
-                            {/* High Trending in Genre */}
-                            <h2 style={{
-                                color: '#fff', fontSize: '1.4rem', fontWeight: '900', letterSpacing: '1px', marginBottom: '20px', textTransform: 'uppercase', fontFamily: '"Amazon Ember", Arial, sans-serif'
-                            }}>
-                                {genreSearchData.genreName} TRENDING
-                            </h2>
-                            <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                                {genreSearchData.trending.map((item) => (
-                                    <div key={item.id} style={{ flex: '0 0 auto', width: starSeriesIds.has(item.id) ? '185px' : '160px', position: 'relative', paddingTop: starSeriesIds.has(item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.id) ? '20px' : '0', transition: 'all 0.3s' }} onClick={(e) => handleSeriesClick(e, item)}>
-                                        <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit', pointerEvents: selectForFavorite ? 'none' : 'auto', position: 'relative', overflow: 'visible' }}>
-                                            {starSeriesIds.has(item.id) && <PosterBadge />}
-                                            <img
-                                                src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450/141414/FFFF00?text='}
-                                                alt={item.name}
-                                                style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}
-                                            />
-                                        </Link>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* People Also Like (Underrated) */}
-                            <div style={{ marginTop: '30px' }}>
-                                <h2 style={{
-                                    color: '#fff', fontSize: '1.4rem', fontWeight: '900', letterSpacing: '1px', marginBottom: '20px', textTransform: 'uppercase', fontFamily: '"Amazon Ember", Arial, sans-serif'
-                                }}>
-                                    PEOPLE ALSO LIKE THIS
-                                </h2>
-                                <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                                    {genreSearchData.underrated.map((item) => (
-                                        <div key={item.id} style={{ flex: '0 0 auto', width: starSeriesIds.has(item.id) ? '185px' : '160px', position: 'relative', paddingTop: starSeriesIds.has(item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.id) ? '20px' : '0', transition: 'all 0.3s' }} onClick={(e) => handleSeriesClick(e, item)}>
-                                            <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit', pointerEvents: selectForFavorite ? 'none' : 'auto', position: 'relative', overflow: 'visible' }}>
-                                                {starSeriesIds.has(item.id) && <PosterBadge />}
-                                                <img
-                                                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450/141414/FFFF00?text='}
-                                                    alt={item.name}
-                                                    style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}
-                                                />
-                                            </Link>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                <div className="search-results-container">
+                    {loading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '100px', color: '#666' }}>Searching...</div>
+                    ) : results.length === 0 && !genreSearchData ? (
+                        <div style={{ textAlign: 'center', marginTop: '100px', color: '#999' }}>
+                            <h2>No results for "{query}"</h2>
+                            <p>Try searching for specific series like "Breaking Bad" or "The Office"</p>
                         </div>
                     ) : (
-                        // NORMAL SEARCH UI
                         <>
-                            <h2 className="section-title">Search Results for "{query}"</h2>
-                            <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                                {results.length === 0 ? <p style={{ color: '#999' }}>No series found with that name.</p> : results.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        style={{ flex: '0 0 auto', width: starSeriesIds.has(item.id) ? '185px' : '160px', position: 'relative', paddingTop: starSeriesIds.has(item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.id) ? '20px' : '0', transition: 'all 0.3s' }} // Vertical Poster Width
-                                        onClick={(e) => handleSeriesClick(e, item)}
-                                    >
-                                        <Link
-                                            to={selectForFavorite ? '#' : `/tv/${item.id}`}
-                                            style={{ display: 'block', textDecoration: 'none', color: 'inherit', pointerEvents: selectForFavorite ? 'none' : 'auto', position: 'relative', overflow: 'visible' }}>
-                                            {starSeriesIds.has(item.id) && <PosterBadge />}
-                                            <img
-                                                src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450/141414/FFFF00?text=No+Image'}
-                                                alt={item.name}
-                                                style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1 }}
-                                            />
+                            {/* TIER 1: TOP RESULT */}
+                            {topResult && (
+                                <div className="search-tier-top">
+                                    <div className="top-result-card" onClick={(e) => handleSeriesClick(e, topResult)}>
+                                        <Link to={selectForFavorite ? '#' : `/tv/${topResult.id}`} style={{ display: 'flex', width: '100%', textDecoration: 'none', color: 'inherit' }}>
+                                            <div className="top-poster-wrapper">
+                                                {starSeriesIds.has(topResult.id) && <PosterBadge />}
+                                                <img
+                                                    className="top-poster"
+                                                    src={topResult.poster_path ? `https://image.tmdb.org/t/p/w780${topResult.poster_path}` : 'https://via.placeholder.com/300x450'}
+                                                    alt={topResult.name}
+                                                />
+                                            </div>
+                                            <div className="top-info">
+                                                <div className="top-label">Top Result</div>
+                                                <h1 className="top-title">{topResult.name}</h1>
+                                                <div className="top-meta">
+                                                    <span>{topResult.first_air_date ? topResult.first_air_date.substring(0, 4) : 'Unknown'}</span>
+                                                    <span>•</span>
+                                                    <span>{topResult.vote_average ? `${topResult.vote_average.toFixed(1)} Rating` : 'Mixed'}</span>
+                                                </div>
+                                                <div className="view-btn">View Details</div>
+                                            </div>
                                         </Link>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            )}
 
-                            {/* YOU MAY ALSO LIKE SECTION (Recommendations) */}
-                            <div style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '30px' }}>
-                                <h2 style={{
-                                    color: '#fff', fontSize: '1.4rem', fontWeight: '900', letterSpacing: '1px', marginBottom: '30px', textTransform: 'uppercase', fontFamily: '"Amazon Ember", Arial, sans-serif'
-                                }}>
-                                    YOU MAY ALSO LIKE
-                                </h2>
+                            {/* TIER 2: EXACT MATCHES */}
+                            {exactMatches.length > 0 && (
+                                <div className="search-tier-section">
+                                    <h3 className="tier-title">More Matches</h3>
+                                    <div className="tier-row">
+                                        {exactMatches.map(item => (
+                                            <div key={item.id} className="search-card" onClick={(e) => handleSeriesClick(e, item)}>
+                                                <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block' }}>
+                                                    {starSeriesIds.has(item.id) && <PosterBadge />}
+                                                    <img
+                                                        className="search-poster"
+                                                        src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300'}
+                                                        alt={item.name}
+                                                    />
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                                <GenreRow title="SCI-FI & FANTASY" genreId="10765" apiKey={TMDB_API_KEY} starSeriesIds={starSeriesIds} />
-                                <GenreRow title="HORROR" genreId="27" apiKey={TMDB_API_KEY} starSeriesIds={starSeriesIds} />
-                                <GenreRow title="COMEDY" genreId="35" apiKey={TMDB_API_KEY} starSeriesIds={starSeriesIds} />
-                                <GenreRow title="CRIME" genreId="80" apiKey={TMDB_API_KEY} starSeriesIds={starSeriesIds} />
-                            </div>
+                            {/* TIER 3: RELATED SERIES (Replacing Related Discovery) */}
+                            {relatedSeries.length > 0 && (
+                                <div className="search-tier-section">
+                                    <h3 className="tier-title">Related Series</h3>
+                                    <div className="tier-row">
+                                        {relatedSeries.map(item => (
+                                            <div key={item.id} className="search-card" onClick={(e) => handleSeriesClick(e, item)}>
+                                                <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block' }}>
+                                                    {starSeriesIds.has(item.id) && <PosterBadge />}
+                                                    <img
+                                                        className="search-poster"
+                                                        src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300'}
+                                                        alt={item.name}
+                                                    />
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
-                </>
+                </div>
             )}
-        </div>
-    );
-};
-
-// Sub-component for Genre Rows
-function GenreRow({ title, genreId, apiKey, starSeriesIds }) {
-    const [series, setSeries] = useState([]);
-
-    useEffect(() => {
-        const fetchGenre = async () => {
-            try {
-                const res = await fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&with_genres=${genreId}&sort_by=popularity.desc&page=1`);
-                const data = await res.json();
-                setSeries(data.results || []);
-            } catch (err) {
-                console.error(`Error fetching ${title}`, err);
-            }
-        };
-        fetchGenre();
-    }, [genreId, apiKey]);
-
-    if (series.length === 0) return null;
-
-    return (
-        <div style={{ marginBottom: '40px' }}>
-            <h3 style={{
-                color: '#ddd',
-                fontSize: '1.1rem',
-                fontWeight: '900',
-                marginBottom: '15px',
-                marginLeft: '5px'
-            }}>{title}</h3>
-            <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '10px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {series.map(item => (
-                    <div key={item.id} style={{ flex: '0 0 auto', width: starSeriesIds.has(item.id) ? '175px' : '150px', paddingTop: starSeriesIds.has(item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.id) ? '20px' : '0', transition: 'all 0.3s' }}>
-                        <Link
-                            to={`/tv/${item.id}`}
-                            style={{ width: '100%', position: 'relative', display: 'block', overflow: 'visible' }}
-                        >
-                            {starSeriesIds.has(item.id) && <PosterBadge />}
-                            <img
-                                src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450/111/333?text='}
-                                alt={item.name}
-                                style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: '4px', display: 'block', position: 'relative', zIndex: 1 }}
-                            />
-                        </Link>
-                    </div>
-                ))}
-            </div>
         </div>
     );
 };

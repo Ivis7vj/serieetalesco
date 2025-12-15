@@ -7,7 +7,7 @@ import {
     onAuthStateChanged,
     sendPasswordResetEmail
 } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -95,23 +95,38 @@ export function AuthProvider({ children }) {
             setLoading(false);
             return;
         }
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        // 1. Auth State Listener
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
-            if (user) {
-                // Fetch user profile data
-                const docRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(docRef);
+            if (!user) {
+                setUserData(null);
+                setLoading(false);
+            }
+            // If user exists, loading calculation is deferred to data listener
+        });
+
+        return () => unsubscribeAuth();
+    }, []);
+
+    // 2. User Data Listener (Real-time)
+    useEffect(() => {
+        let unsubscribeData = () => { };
+
+        if (currentUser) {
+            const docRef = doc(db, "users", currentUser.uid);
+            unsubscribeData = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     setUserData(docSnap.data());
                 }
-            } else {
-                setUserData(null);
-            }
-            setLoading(false);
-        });
+                setLoading(false); // Data ready
+            }, (error) => {
+                console.error("Error fetching user data:", error);
+                setLoading(false);
+            });
+        }
 
-        return unsubscribe;
-    }, []);
+        return () => unsubscribeData();
+    }, [currentUser]);
 
     if (!auth) {
         return (
