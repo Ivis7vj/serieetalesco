@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MdStar, MdDelete, MdShare } from 'react-icons/md';
+import { MdStar, MdDelete, MdShare, MdEdit } from 'react-icons/md';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc } 
 import { Link } from 'react-router-dom';
 import StoryCard from '../components/StoryCard';
 import ShareModal from '../components/ShareModal';
+import ReviewModal from '../components/ReviewModal';
 import { useStoryGenerator } from '../hooks/useStoryGenerator';
 import './Home.css';
 
@@ -23,6 +24,12 @@ const UserReview = () => {
         isOpen: false,
         reviewId: null,
         isSeries: false
+    });
+
+    // Edit Modal State
+    const [editModal, setEditModal] = useState({
+        isOpen: false,
+        review: null
     });
 
     // Trigger generation when storyData is updated and component is ready
@@ -64,6 +71,32 @@ const UserReview = () => {
         };
         fetchReviews();
     }, [currentUser]);
+
+    const handleEdit = (review) => {
+        setEditModal({
+            isOpen: true,
+            review: review
+        });
+    };
+
+    const handleUpdateReview = async (data) => {
+        if (!editModal.review) return;
+        const reviewId = editModal.review.id;
+        try {
+            const reviewRef = doc(db, 'reviews', reviewId);
+            await updateDoc(reviewRef, {
+                rating: data.rating,
+                review: data.review,
+                updatedAt: new Date().toISOString()
+            });
+
+            // Update Local State
+            setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, rating: data.rating, review: data.review } : r));
+            setEditModal({ isOpen: false, review: null });
+        } catch (error) {
+            console.error("Error updating review:", error);
+        }
+    };
 
     const { confirm } = useNotification();
 
@@ -179,6 +212,9 @@ const UserReview = () => {
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <div style={{ color: '#FFCC00', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '5px' }}>SERIES REVIEW</div>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={() => handleEdit(group.seriesReview)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }} title="Edit Review">
+                                                        <MdEdit />
+                                                    </button>
                                                     <button onClick={() => handleShare(group.seriesReview, true)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }} title="Share Story">
                                                         <MdShare />
                                                     </button>
@@ -201,7 +237,10 @@ const UserReview = () => {
                                                 <div key={ep.id} style={{ background: '#1a1a1a', padding: '10px', borderRadius: '4px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                                                         <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.95rem' }}>S{ep.seasonNumber}E{ep.episodeNumber} - {ep.episodeName}</div>
-                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                            <button onClick={() => handleEdit(ep)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '0.8rem' }} title="Edit Review">
+                                                                <MdEdit size={14} />
+                                                            </button>
                                                             <button onClick={() => handleShare(ep, false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '0.8rem' }} title="Share Story">
                                                                 <MdShare size={14} />
                                                             </button>
@@ -255,6 +294,16 @@ const UserReview = () => {
                 isOpen={shareModal.isOpen}
                 onClose={() => setShareModal({ ...shareModal, isOpen: false })}
                 imageUrl={shareModal.imageUrl}
+            />
+
+            <ReviewModal
+                isOpen={editModal.isOpen}
+                onClose={() => setEditModal({ isOpen: false, review: null })}
+                onSubmit={handleUpdateReview}
+                initialRating={editModal.review?.rating || 0}
+                initialReview={editModal.review?.review || ''}
+                modalTitle="Edit Review"
+                movieName={editModal.review?.name || 'Review'}
             />
 
             {/* Custom Delete Confirmation Modal */}

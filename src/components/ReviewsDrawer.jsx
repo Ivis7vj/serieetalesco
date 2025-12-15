@@ -223,19 +223,6 @@ const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, on
 
 
 
-                                        {/* Share Button - Only Owner? User requested "remove share button for another user review" -> Only Owner or maybe Hidden? 
-                                            Interpretation: Only show share if it's YOUR review, or maybe removed entirely for non-owners. 
-                                            I'll restricting it to owner. */}
-                                        {currentUser && review.userId === currentUser.uid && (
-                                            <button
-                                                onClick={() => onShare(review)}
-                                                style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer' }}
-                                                title="Share"
-                                            >
-                                                <MdShare size={18} />
-                                            </button>
-                                        )}
-
                                         {/* Edit Button */}
                                         {currentUser && review.userId === currentUser.uid && (
                                             <button
@@ -244,6 +231,17 @@ const ReviewsDrawer = ({ isOpen, onClose, reviews, onDelete, onShare, onLike, on
                                                 title="Edit"
                                             >
                                                 <MdEdit size={18} />
+                                            </button>
+                                        )}
+
+                                        {/* Share Button */}
+                                        {currentUser && review.userId === currentUser.uid && (
+                                            <button
+                                                onClick={() => onShare(review)}
+                                                style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer' }}
+                                                title="Share"
+                                            >
+                                                <MdShare size={18} />
                                             </button>
                                         )}
 
