@@ -4,6 +4,7 @@ import { CgProfile } from 'react-icons/cg';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { MdCheck } from 'react-icons/md';
+import Notify from './Notify';
 import '../pages/Home.css';
 
 import { useAuth } from '../context/AuthContext';
@@ -244,7 +245,9 @@ const Header = ({ onLogout }) => {
             )}
 
             {/* LEFT SPACER */}
-            <div className="header-left" style={{ flex: 1 }}></div>
+            <div className="header-left" style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <Notify />
+            </div>
 
             {/* CENTER: DYNAMIC LOGO / SEARCH */}
             <div ref={searchContainerRef} style={{ flex: 1, display: 'flex', justifyContent: 'center', position: 'relative' }}>
