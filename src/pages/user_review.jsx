@@ -192,11 +192,17 @@ const UserReview = () => {
                         <div key={group.tmdbId} style={{ background: '#222', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <Link to={`/${group.type || 'tv'}/${group.tmdbId}`}>
-                                    <img
-                                        src={`https://image.tmdb.org/t/p/w92${group.poster_path}`}
-                                        alt={group.name}
-                                        style={{ borderRadius: '4px', width: '60px' }}
-                                    />
+                                    {group.poster_path ? (
+                                        <img
+                                            src={`https://image.tmdb.org/t/p/w92${group.poster_path}`}
+                                            alt={group.name}
+                                            style={{ borderRadius: '4px', width: '60px' }}
+                                        />
+                                    ) : (
+                                        <div style={{ width: '60px', height: '90px', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>
+                                            <span style={{ fontSize: '2rem', color: '#555' }}>?</span>
+                                        </div>
+                                    )}
                                 </Link>
 
                                 <div style={{ flex: 1 }}>
