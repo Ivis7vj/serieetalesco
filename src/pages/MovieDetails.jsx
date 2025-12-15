@@ -1568,6 +1568,31 @@ const MovieDetails = () => {
                                         />
                                     </button>
 
+                                    {/* RATE SEASON BUTTON */}
+                                    <button
+                                        onClick={() => handleSeasonReview(selectedSeason)}
+                                        style={{
+                                            background: userSeasonReview ? '#fff' : '#333',
+                                            color: userSeasonReview ? '#000' : '#fff',
+                                            border: '1px solid #333',
+                                            padding: '8px 16px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.9rem',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            textTransform: 'uppercase',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            height: '40px',
+                                            marginLeft: '10px'
+                                        }}
+                                        title={`Review Season ${selectedSeason}`}
+                                    >
+                                        <MdRateReview size={18} />
+                                        {userSeasonReview ? `Rated (${userSeasonReview.rating})` : 'Rate Season'}
+                                    </button>
+
                                     {/* Dropdown / Overlay */}
                                     <div
                                         style={{
