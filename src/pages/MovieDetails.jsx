@@ -9,6 +9,7 @@ import PosterUnlockPopup from '../components/PosterUnlockPopup';
 import StorySticker from '../components/StorySticker';
 import ShareModal from '../components/ShareModal';
 import LoadingPopup from '../components/LoadingPopup';
+import EditPosterHint from '../components/EditPosterHint';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
@@ -102,7 +103,8 @@ const MovieDetails = () => {
     const [isWatched, setIsWatched] = useState(false);
     const [showPosterUnlockPopup, setShowPosterUnlockPopup] = useState(false);
     const [posterUnlockData, setPosterUnlockData] = useState(null);
-    const [justCompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
+    const [just​CompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
+    const [showEditHint, setShowEditHint] = useState(false); // Show edit poster hint
 
     // Review Modal State
     const [isReviewOpen, setIsReviewOpen] = useState(false);
