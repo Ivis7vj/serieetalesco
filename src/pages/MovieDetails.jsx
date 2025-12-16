@@ -105,6 +105,9 @@ const MovieDetails = () => {
     const [showEditHint, setShowEditHint] = useState(false);
     const [isEditButtonGlowing, setIsEditButtonGlowing] = useState(false);
 
+    // Selected Season (must be declared before useEffect that uses it)
+    const [selectedSeason, setSelectedSeason] = useState(seasonNumber ? parseInt(seasonNumber) : 1);
+
     // Derived Season Progress
     const [seasonProgress, setSeasonProgress] = useState({
         completed: false,
@@ -113,19 +116,19 @@ const MovieDetails = () => {
     });
 
     useEffect(() => {
-        if (userData && details && seasonNumber) {
+        if (userData && details && selectedSeason) {
             const completedKey = String(details.id);
-            const isCompleted = userData.completedSeasons?.[completedKey]?.includes(Number(seasonNumber));
-            const selectedPosterKey = `${details.id}_${seasonNumber}`;
+            const isCompleted = userData.completedSeasons?.[completedKey]?.includes(Number(selectedSeason));
+            const selectedPosterKey = `${details.id}_${selectedSeason}`;
             const selectedPoster = userData.selectedPosters?.[selectedPosterKey];
 
             setSeasonProgress({
                 completed: !!isCompleted,
-                rated: false, // TODO: Link to actual rating logic
+                rated: false, // Updated via userSeasonReview check separately if needed, or ignored for button state
                 selectedPoster: selectedPoster
             });
         }
-    }, [userData, details, seasonNumber]);
+    }, [userData, details, selectedSeason]);
 
     const handlePopupClose = () => {
         setShowPosterUnlockPopup(false);
@@ -158,7 +161,7 @@ const MovieDetails = () => {
     const [showSeasonCompletion, setShowSeasonCompletion] = useState(false);
     const [completedSeasonInfo, setCompletedSeasonInfo] = useState(null);
 
-    const [selectedSeason, setSelectedSeason] = useState(seasonNumber ? parseInt(seasonNumber) : 1);
+
 
     // Filter User Series Review (for Action Button State) - Keeping Series Level
     const userSeriesReview = reviewsData.find(r => r.tmdbId === parseInt(id || 0) && r.userId === currentUser?.uid && !r.isEpisode && !r.isSeason);
@@ -347,6 +350,12 @@ const MovieDetails = () => {
                 await updateDoc(userRef, {
                     [`completedSeasons.${completedKey}`]: arrayUnion(seasonNumber)
                 });
+
+                // CRITICAL: Update local state immediately so Edit button appears
+                setSeasonProgress(prev => ({
+                    ...prev,
+                    completed: true
+                }));
 
                 // Show unlock popup
                 setShowPosterUnlockPopup(true);
