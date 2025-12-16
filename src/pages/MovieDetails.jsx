@@ -1544,7 +1544,6 @@ const MovieDetails = () => {
                             pointerEvents: 'none' // Click through
                         }}>
                             <MdFavorite
-                                ref={heartRef}
                                 size={120}
                                 color="#FF0000"
                                 style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
@@ -1556,6 +1555,59 @@ const MovieDetails = () => {
                                 style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
                             />
                         </div>
+
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 1
+                        }}>
+                            <MdPlayArrow
+                                size={120}
+                                color="#FFFFFF"
+                                style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+                            />
+                        </div>
+
+                        {/* Edit Poster Button - Shows when season is completed */}
+                        {seasonNumber && userData?.completedSeasons?.[String(details.id)]?.includes(seasonNumber) && (
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigate(`/series/${details.id}/season/${seasonNumber}/posters`);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    top: '15px',
+                                    right: '15px',
+                                    background: 'rgba(0, 0, 0, 0.8)',
+                                    backdropFilter: 'blur(10px)',
+                                    border: '2px solid rgba(255, 214, 0, 0.6)',
+                                    borderRadius: '50%',
+                                    width: '45px',
+                                    height: '45px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    zIndex: 2,
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.background = 'rgba(255, 214, 0, 0.9)';
+                                    e.target.style.transform = 'scale(1.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.background = 'rgba(0, 0, 0, 0.8)';
+                                    e.target.style.transform = 'scale(1)';
+                                }}
+                                title="Edit Season Poster"
+                            >
+                                <MdEdit size={24} color="#FFD600" />
+                            </button>
+                        )}
 
                         <img
                             src={posterUrl}
