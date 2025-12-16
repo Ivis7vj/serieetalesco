@@ -5,6 +5,7 @@ import { db } from '../firebase-config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { MdLock, MdCheck, MdArrowBack } from 'react-icons/md';
 import { getPosterUnlockStatus } from '../utils/posterUnlockLogic';
+import { logActivity } from '../utils/activityLogger';
 
 const PosterSelection = () => {
     const { id, seasonNumber } = useParams();
@@ -70,6 +71,21 @@ const PosterSelection = () => {
             await updateDoc(userRef, {
                 [`selectedPosters.${key}`]: posterPath
             });
+
+            // Log Activity for Friends Feed
+            // (userId, username, seriesId, seriesName, actionType, textContent, rating, seasonNumber, episodeNumber, explicitPosterPath)
+            logActivity(
+                currentUser.uid,
+                userData.username || 'User',
+                Number(id),
+                seriesDetails?.name || 'Unknown Series',
+                'selected_poster',
+                null, // No review text
+                null, // No rating
+                Number(seasonNumber),
+                null,
+                posterPath
+            );
 
             setSelectedPoster(posterPath);
 

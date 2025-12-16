@@ -123,6 +123,7 @@ const Friends = () => {
             case 'watched': return 'watched';
             case 'watchlist': return 'added to watchlist';
             case 'review': return 'reviewed';
+            case 'selected_poster': return 'unlocked season poster';
             default: return 'interacted with';
         }
     };
@@ -225,6 +226,31 @@ const Friends = () => {
                                         {/* Row 4: Poster */}
                                         <Link to={`/tv/${item.seriesId}`} className="activity-poster-wrapper">
                                             <img src={`https://image.tmdb.org/t/p/w200${item.seriesPosterURL}`} alt={item.seriesName} loading="lazy" />
+                                            {/* Season Completed Badge Overlay */}
+                                            {item.actionType === 'selected_poster' && item.seasonNumber && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+                                                    padding: '8px 4px',
+                                                    display: 'flex',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <div style={{
+                                                        background: '#FFD600',
+                                                        color: '#000',
+                                                        fontSize: '0.6rem',
+                                                        fontWeight: 'bold',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '4px',
+                                                        textTransform: 'uppercase'
+                                                    }}>
+                                                        Season {item.seasonNumber} • Completed
+                                                    </div>
+                                                </div>
+                                            )}
                                         </Link>
                                     </div>
                                 </div>

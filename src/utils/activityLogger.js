@@ -16,11 +16,14 @@ export const logActivity = async (user, actionType, seriesData) => {
             userId: user.uid,
             username: user.username || 'User',
             userProfilePicURL: user.photoURL || null,
-            actionType: actionType, // 'liked', 'watched', 'watchlist', 'review'
+            actionType: actionType, // 'liked', 'watched', 'watchlist', 'review', 'selected_poster'
             seriesId: seriesData.id,
             seriesName: seriesData.name,
-            seriesPosterURL: seriesData.poster_path, // Full path or partial? Usually partial in TMDB.
+            seriesPosterURL: seriesData.poster_path,
             seasonNumber: seriesData.seasonNumber || null,
+            episodeNumber: seriesData.episodeNumber || null,
+            rating: seriesData.rating || null,
+            reviewSnippet: seriesData.review || null,
             timestamp: serverTimestamp(), // Server time
             createdAt: Date.now() // Client time for easy filtering if needed
         };
