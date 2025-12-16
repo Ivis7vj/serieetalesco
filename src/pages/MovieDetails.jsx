@@ -103,7 +103,7 @@ const MovieDetails = () => {
     const [isWatched, setIsWatched] = useState(false);
     const [showPosterUnlockPopup, setShowPosterUnlockPopup] = useState(false);
     const [posterUnlockData, setPosterUnlockData] = useState(null);
-    const [just​CompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
+    const [justCompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
     const [showEditHint, setShowEditHint] = useState(false); // Show edit poster hint
 
     // Review Modal State
