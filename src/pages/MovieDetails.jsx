@@ -259,11 +259,24 @@ const MovieDetails = () => {
         }
     };
 
-    const closeStickerModal = () => {
-        setStickerModalOpen(false);
-        setStickerStatus('idle');
-        setGeneratedStickerImage(null);
-        setStickerData(null);
+    // Check if all episodes in a season are completed
+    const checkSeasonCompletion = (seasonNumber) => {
+        if (!seasonNumber || !episodes || !userData) return false;
+
+        // Get all episode IDs for this season
+        const seasonEpisodeIds = episodes
+            .filter(ep => ep.season_number === seasonNumber)
+            .map(ep => ep.id);
+
+        if (seasonEpisodeIds.length === 0) return false;
+
+        // Check if all are in userData.watched
+        const watchedEpisodeIds = (userData.watched || [])
+            .filter(w => w.isEpisode && w.seasonNumber === seasonNumber)
+            .map(w => w.episodeId || w.id);
+
+        // Season is complete if all episode IDs are in watched
+        return seasonEpisodeIds.every(id => watchedEpisodeIds.includes(id));
     };
 
     const handleShare = (reviewItem, isEpisode = false, isSeason = false) => {
@@ -305,7 +318,8 @@ const MovieDetails = () => {
                 photoURL: currentUser?.photoURL,
                 uid: currentUser?.uid
             },
-            isEpisodes: isEpisode
+            isEpisodes: isEpisode,
+            seasonCompleted: isSeason ? checkSeasonCompletion(reviewItem.seasonNumber) : false
         });
         setStickerModalOpen(true);
     };

@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { MdStar } from 'react-icons/md';
 
-const StorySticker = forwardRef(({ movie, rating, user }, ref) => {
+const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted }, ref) => {
     // Inline SVG placeholders (no external network calls needed)
     const defaultPosterSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="750"%3E%3Crect width="500" height="750" fill="%23333"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="24" fill="%23fff"%3ENo Image%3C/text%3E%3C/svg%3E';
     const defaultPfpSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Ccircle cx="75" cy="75" r="75" fill="%23666"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="%23fff"%3EU%3C/text%3E%3C/svg%3E';
@@ -116,6 +116,41 @@ const StorySticker = forwardRef(({ movie, rating, user }, ref) => {
                     }}
                 />
 
+                {/* SEASON COMPLETION BADGE */}
+                {seasonCompleted && movie.seasonEpisode && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '320px',
+                        left: '30px',
+                        background: 'rgba(255, 214, 0, 0.15)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1.5px solid rgba(255, 214, 0, 0.4)',
+                        borderRadius: '20px',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        animation: 'fadeIn 250ms ease-out',
+                        zIndex: 2
+                    }}>
+                        <span style={{
+                            fontSize: '20px',
+                            fontWeight: '700',
+                            color: '#FFD600',
+                            letterSpacing: '0.5px'
+                        }}>
+                            {movie.seasonEpisode}
+                        </span>
+                        <span style={{
+                            fontSize: '20px',
+                            fontWeight: '600',
+                            color: 'rgba(255, 255, 255, 0.9)'
+                        }}>
+                            • Completed
+                        </span>
+                    </div>
+                )}
+
                 {/* BRANDING OVERLAY (Inside Poster) */}
                 <div style={{
                     position: 'absolute',
@@ -201,6 +236,10 @@ const StorySticker = forwardRef(({ movie, rating, user }, ref) => {
                     {username} watched this
                 </span>
             </div>
+
+            <style>
+                {`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}
+            </style>
         </div>
     );
 });
