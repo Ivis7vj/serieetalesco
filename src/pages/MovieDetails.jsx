@@ -1571,43 +1571,56 @@ const MovieDetails = () => {
                         </div>
 
                         {/* Edit Poster Button - Shows when season is completed */}
-                        {seasonNumber && userData?.completedSeasons?.[String(details.id)]?.includes(seasonNumber) && (
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    navigate(`/series/${details.id}/season/${seasonNumber}/posters`);
-                                }}
-                                style={{
-                                    position: 'absolute',
-                                    top: '15px',
-                                    right: '15px',
-                                    background: 'rgba(0, 0, 0, 0.8)',
-                                    backdropFilter: 'blur(10px)',
-                                    border: '2px solid rgba(255, 214, 0, 0.6)',
-                                    borderRadius: '50%',
-                                    width: '45px',
-                                    height: '45px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    zIndex: 2,
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.background = 'rgba(255, 214, 0, 0.9)';
-                                    e.target.style.transform = 'scale(1.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.background = 'rgba(0, 0, 0, 0.8)';
-                                    e.target.style.transform = 'scale(1)';
-                                }}
-                                title="Edit Season Poster"
-                            >
-                                <MdEdit size={24} color="#FFD600" />
-                            </button>
-                        )}
+                        {(() => {
+                            const seriesKey = String(details.id);
+                            const isCompleted = userData?.completedSeasons?.[seriesKey]?.includes(seasonNumber);
+                            console.log('Edit Button Debug:', {
+                                seasonNumber,
+                                seriesKey,
+                                completedSeasons: userData?.completedSeasons,
+                                isCompleted,
+                                shouldShow: seasonNumber && isCompleted
+                            });
+
+                            // Show button if viewing a season page
+                            return seasonNumber ? (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        navigate(`/series/${details.id}/season/${seasonNumber}/posters`);
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '15px',
+                                        right: '15px',
+                                        background: isCompleted ? 'rgba(255, 214, 0, 0.9)' : 'rgba(100, 100, 100, 0.6)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: `2px solid ${isCompleted ? 'rgba(255, 214, 0, 0.8)' : 'rgba(150, 150, 150, 0.4)'}`,
+                                        borderRadius: '50%',
+                                        width: '45px',
+                                        height: '45px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        zIndex: 2,
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = 'rgba(255, 214, 0, 1)';
+                                        e.target.style.transform = 'scale(1.1)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = isCompleted ? 'rgba(255, 214, 0, 0.9)' : 'rgba(100, 100, 100, 0.6)';
+                                        e.target.style.transform = 'scale(1)';
+                                    }}
+                                    title={isCompleted ? "Edit Season Poster (Season Completed!)" : "Edit Season Poster (Complete all episodes to unlock all posters)"}
+                                >
+                                    <MdEdit size={24} color={isCompleted ? "#000" : "#fff"} />
+                                </button>
+                            ) : null;
+                        })()}
 
                         <img
                             src={posterUrl}
