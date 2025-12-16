@@ -13,6 +13,7 @@ import Followers from './pages/Followers';
 import Following from './pages/Following';
 import News from './pages/News';
 import Friends from './pages/Friends';
+import PosterSelection from './pages/PosterSelection';
 
 import Search from './pages/Search';
 import Layout from './Layout';
@@ -44,6 +45,7 @@ function App() {
                 <Route path="/movie/:id" element={<MovieDetails />} />
                 <Route path="/tv/:id" element={<MovieDetails />} />
                 <Route path="/tv/:id/season/:seasonNumber" element={<MovieDetails />} />
+                <Route path="/series/:id/season/:seasonNumber/posters" element={<PosterSelection />} />
                 <Route path="/tv/:id/season/:seasonNumber/episode/:episodeNumber" element={<EpisodeDetails />} />
                 <Route path="/person/:id" element={<Biography />} />
 
