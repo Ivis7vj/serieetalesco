@@ -76,9 +76,13 @@ const Home = () => {
           fetch(`${TMDB_BASE_URL}/tv/airing_today?api_key=${TMDB_API_KEY}`).then(r => r.json())
         ]);
 
-        setTrendingSeries(trending.results.slice(0, 12));
-        setTopRatedSeries(topRated.results.slice(0, 12));
-        setNewSeries(newReleases.results.slice(0, 12));
+        console.log('Trending:', trending.results?.length);
+        console.log('Top Rated:', topRated.results?.length);
+        console.log('New:', newReleases.results?.length);
+
+        setTrendingSeries(trending.results?.slice(0, 12) || []);
+        setTopRatedSeries(topRated.results?.slice(0, 12) || []);
+        setNewSeries(newReleases.results?.slice(0, 12) || []);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching series:', error);
@@ -113,6 +117,10 @@ const Home = () => {
   };
 
   const currentMoment = activeMoments[momentIndex];
+
+  console.log('Rendering Home - Trending count:', trendingSeries.length);
+  console.log('Rendering Home - Top Rated count:', topRatedSeries.length);
+  console.log('Rendering Home - New count:', newSeries.length);
 
   return (
     <>
