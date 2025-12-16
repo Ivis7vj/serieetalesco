@@ -1752,14 +1752,24 @@ const MovieDetails = () => {
                         <button
                             className="action-btn-responsive"
                             onClick={() => {
-                                setExistingReviewData(userSeriesReview || null);
-                                setReviewingItem({ type: 'series', id: details.id, name: details.name });
+                                if (seasonNumber) {
+                                    setExistingReviewData(userSeasonReview || null);
+                                    setReviewingItem({
+                                        type: 'season',
+                                        id: details.id,
+                                        name: details.name,
+                                        seasonNumber: Number(seasonNumber)
+                                    });
+                                } else {
+                                    setExistingReviewData(userSeriesReview || null);
+                                    setReviewingItem({ type: 'series', id: details.id, name: details.name });
+                                }
                                 setIsReviewOpen(true);
                             }}
                             style={{
-                                background: userSeriesReview ? '#fff' : '#FFCC00',
+                                background: (seasonNumber ? userSeasonReview : userSeriesReview) ? '#fff' : '#FFCC00',
                                 color: '#000',
-                                border: `2px solid ${userSeriesReview ? '#fff' : '#FFCC00'}`,
+                                border: `2px solid ${(seasonNumber ? userSeasonReview : userSeriesReview) ? '#fff' : '#FFCC00'}`,
                                 padding: '12px 30px',
                                 fontSize: '1.1rem',
                                 fontWeight: '900',
@@ -1776,7 +1786,7 @@ const MovieDetails = () => {
                                 transition: 'all 0.3s ease'
                             }}
                         >
-                            <MdRateReview size={20} /> {userSeriesReview ? `Rated (${userSeriesReview.rating})` : 'Review'}
+                            <MdRateReview size={20} /> {(seasonNumber ? userSeasonReview : userSeriesReview) ? `Rated (${(seasonNumber ? userSeasonReview : userSeriesReview).rating})` : 'Review'}
                         </button>
 
 
@@ -1784,11 +1794,11 @@ const MovieDetails = () => {
 
 
                         {/* SHARE (Only if Reviewed) */}
-                        {userSeriesReview && (
+                        {(seasonNumber ? userSeasonReview : userSeriesReview) && (
                             <button
                                 className="action-btn-responsive"
                                 onClick={() => handleAction(async () => {
-                                    handleShare(userSeriesReview);
+                                    handleShare((seasonNumber ? userSeasonReview : userSeriesReview), false, !!seasonNumber);
                                 })}
                                 style={{
                                     background: '#FFCC00',

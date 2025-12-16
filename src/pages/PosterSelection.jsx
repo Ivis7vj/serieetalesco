@@ -73,6 +73,22 @@ const PosterSelection = () => {
             });
 
             // Log Activity for Friends Feed
+            logActivity(
+                {
+                    uid: currentUser.uid,
+                    username: userData.username || 'User',
+                    photoURL: currentUser.photoURL
+                },
+                'selected_poster',
+                {
+                    id: Number(id),
+                    name: seriesDetails?.name || 'Unknown Series',
+                    poster_path: posterPath,
+                    seasonNumber: Number(seasonNumber)
+                }
+            );
+
+            // Log Activity for Friends Feed
             // (userId, username, seriesId, seriesName, actionType, textContent, rating, seasonNumber, episodeNumber, explicitPosterPath)
             logActivity(
                 currentUser.uid,
