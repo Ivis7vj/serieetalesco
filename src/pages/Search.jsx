@@ -4,7 +4,7 @@ import { MdHistory, MdCheck } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
 import { doc, updateDoc } from 'firebase/firestore';
-import PosterBadge from '../components/PosterBadge';
+
 import './Home.css';
 import './Search.css';
 
@@ -296,7 +296,7 @@ const Search = () => {
                                     <div className="top-result-card" onClick={(e) => handleSeriesClick(e, topResult)}>
                                         <Link to={selectForFavorite ? '#' : `/tv/${topResult.id}`} style={{ display: 'flex', width: '100%', textDecoration: 'none', color: 'inherit' }}>
                                             <div className="top-poster-wrapper">
-                                                {starSeriesIds.has(topResult.id) && <PosterBadge />}
+
                                                 <img
                                                     className="top-poster"
                                                     src={topResult.poster_path ? `https://image.tmdb.org/t/p/w780${topResult.poster_path}` : 'https://via.placeholder.com/300x450'}
@@ -326,7 +326,7 @@ const Search = () => {
                                         {exactMatches.map(item => (
                                             <div key={item.id} className="search-card" onClick={(e) => handleSeriesClick(e, item)}>
                                                 <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block' }}>
-                                                    {starSeriesIds.has(item.id) && <PosterBadge />}
+
                                                     <img
                                                         className="search-poster"
                                                         src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300'}
@@ -347,7 +347,7 @@ const Search = () => {
                                         {relatedSeries.map(item => (
                                             <div key={item.id} className="search-card" onClick={(e) => handleSeriesClick(e, item)}>
                                                 <Link to={selectForFavorite ? '#' : `/tv/${item.id}`} style={{ display: 'block' }}>
-                                                    {starSeriesIds.has(item.id) && <PosterBadge />}
+
                                                     <img
                                                         className="search-poster"
                                                         src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300'}

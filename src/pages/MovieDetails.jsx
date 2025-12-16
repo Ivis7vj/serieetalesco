@@ -4,8 +4,7 @@ import { MdStar, MdAdd, MdRemove, MdCreate, MdFavorite, MdFavoriteBorder, MdVisi
 import { FaArrowLeft } from 'react-icons/fa';
 import ReviewsDrawer from '../components/ReviewsDrawer';
 import ReviewModal from '../components/ReviewModal';
-import StarBadger from '../components/StarBadger';
-import PosterBadge from '../components/PosterBadge';
+
 import StorySticker from '../components/StorySticker';
 import ShareModal from '../components/ShareModal';
 import LoadingPopup from '../components/LoadingPopup';
@@ -94,8 +93,7 @@ const MovieDetails = () => {
     const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '05587a49bd4890a9630d6c0e544e0f6f';
     const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-    const [showStarBadge, setShowStarBadge] = useState(false);
-    const [hasStarBadge, setHasStarBadge] = useState(false);
+
 
 
     const [seasonDetails, setSeasonDetails] = useState(null);
@@ -316,64 +314,6 @@ const MovieDetails = () => {
         const savedReviewLikes = JSON.parse(localStorage.getItem('reviewLikes') || '{}');
         setReviewLikes(savedReviewLikes);
     }, []);
-
-    // Star Badge Prompt Logic (Moved to Top Level to avoid Hook Error)
-    useEffect(() => {
-        // Only trigger on Main Series Page (no seasonNumber param)
-        if (currentUser && details && !seasonNumber) {
-            const checkPrompt = async () => {
-                try {
-                    const userRef = doc(db, 'users', currentUser.uid);
-                    const snap = await getDoc(userRef);
-                    if (snap.exists()) {
-                        const d = snap.data();
-                        const hasStar = d.starSeries?.some(s => s.id === details.id);
-                        const hasPrompted = d.promptedSeries?.includes(String(details.id));
-                        if (!hasStar && !hasPrompted) setTimeout(() => setShowStarBadge(true), 1000);
-                    }
-                } catch (e) {
-                    console.error("Error checking prompt state", e);
-                }
-            };
-            checkPrompt();
-        }
-    }, [currentUser, details, seasonNumber]);
-
-    // Check Star Badge Status (Initial)
-    useEffect(() => {
-        if (currentUser && details && currentUser.starSeries) {
-            const hasStar = currentUser.starSeries.some(s => s.id === details.id);
-            setHasStarBadge(hasStar);
-        }
-    }, [currentUser, details]);
-
-    const handlePromptClose = () => {
-        setShowStarBadge(false);
-        // Assuming if prompt closed after YES, we earned a star.
-        // We can verify this or just optimistically set it to true if we know it was success.
-        // Or re-check sync? 
-        // For now, let's force a sync or just set true
-        // Actually, the Prompt tracks whether user clicked YES. 
-        // If we want to be precise, StarBadger should pass "earned: true" to onClose.
-        // But for now, if the star badge prompt WAS REVEALED and closed, it likely means interaction happened.
-        // Let's rely on syncUserState re-running or better yet, just manually set it if we suspect success.
-        // BUT, `StarBadger` updates FireStore. We should probably update local state too.
-
-        // Since StarBadger handles the update, we can just set this to true if we want immediate feedback
-        // But we don't know if they clicked Yes or No here.
-        // Let's assume we can fetch or listen.
-        // However, user specifically asked "WHEN THE USER CLICKED THE YES BUTTON... POSTER GETTING... STARBADGE".
-        // I'll update it optimistically here if needed, but better to update StarBadger to pass a success flag.
-        // For this step I'll just adding the state variable, I'll modify Star Badger call separately.
-        checkUser(); // Re-fetch to be sure
-    };
-
-    // Override handlePromptClose to receive success flag
-    const handleStarBadgeComplete = (success) => {
-        setShowStarBadge(false);
-        if (success) setHasStarBadge(true); // Immediate update
-        checkUser();
-    };
 
     // Real-time Reviews Listener (Firestore) for this Series
     // Real-time Reviews Listener (Firestore) for this Series - Optimized
@@ -1458,17 +1398,6 @@ const MovieDetails = () => {
 
     return (
         <div className="movie-details-container">
-            {/* Star Badge Prompt */}
-            {details && (
-                <StarBadger
-                    isOpen={showStarBadge}
-                    onClose={() => handleStarBadgeComplete(false)}
-                    user={currentUser}
-                    series={details}
-                    onComplete={() => handleStarBadgeComplete(true)} // Pass true on success
-                />
-            )}
-
             <div
                 className="backdrop-overlay"
                 style={{
@@ -1529,7 +1458,7 @@ const MovieDetails = () => {
 
 
                         {/* Star Badge if Earned (Prioritize Star Badge over just Review, or show Star Badge if user has it) */}
-                        {hasStarBadge && <PosterBadge />}
+
 
                         {/* Animated Heart */}
                         <div style={{

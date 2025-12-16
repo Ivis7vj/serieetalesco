@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
-import PosterBadge from '../components/PosterBadge';
+
 import './Home.css';
 import './Home_Trending.css';
 import { trendingMoments } from '../data/trendingMomentsData';
@@ -95,7 +95,7 @@ const Home = () => {
     return (
       <div className="series-card-container">
         <Link to={`/tv/${series.id}`} className="series-card">
-          {starSeriesIds.has(series.id) && <PosterBadge />}
+
           <div className="series-poster-wrapper">
             <img
               className="series-poster"

@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
 import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, limit, orderBy, startAfter } from 'firebase/firestore';
 
-import PosterBadge from '../components/PosterBadge';
+
 import './Home.css';
 
 // Simple Image Cropper Component
@@ -589,7 +589,7 @@ const Profile = () => {
                                                 <>
                                                     <Link to={fav.seasonNumber ? `/tv/${fav.id}/season/${fav.seasonNumber}` : `/tv/${fav.id}`} style={{ display: 'block', width: '100%', height: '100%', position: 'relative', overflow: 'visible' }}>
                                                         <img src={`https://image.tmdb.org/t/p/w342${fav.seasonPoster || fav.poster_path}`} alt={fav.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        {starSeriesIds.has(fav.id) && <PosterBadge />}
+
                                                     </Link>
                                                     {isOwnProfile && <button onClick={(e) => { e.preventDefault(); handleBoxClick(index); }} using className="edit-fav-btn"><MdCreate /></button>}
                                                 </>
@@ -618,7 +618,7 @@ const Profile = () => {
                                         {groups[group].map((item, idx) => (
                                             <div key={idx} className="diary-item" style={{ paddingTop: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0', width: starSeriesIds.has(item.seriesId || item.id) ? '180px' : '160px', transition: 'all 0.3s' }}>
                                                 <Link to={item.seasonNumber ? `/tv/${item.seriesId || item.id}/season/${item.seasonNumber}` : `/tv/${item.seriesId || item.id}`} style={{ display: 'block', width: '100%', height: '100%', position: 'relative', overflow: 'visible', borderRadius: '4px' }}>
-                                                    {starSeriesIds.has(item.seriesId || item.id) && <PosterBadge />}
+
                                                     <img src={`https://image.tmdb.org/t/p/w342${item.seasonPoster || item.poster_path}`} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
 
                                                     {/* Internal Badges (Reverted) */}
@@ -799,7 +799,7 @@ const Profile = () => {
                                 {likes.filter(i => i.type !== 'like_review').map(item => (
                                     <div key={item.id} style={{ position: 'relative', paddingTop: starSeriesIds.has(item.seriesId || item.id) ? '0' : '0', paddingLeft: '0' }}>
                                         <Link to={item.seasonNumber ? `/tv/${item.seriesId || item.id}/season/${item.seasonNumber}` : `/tv/${item.seriesId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
-                                            {starSeriesIds.has(item.seriesId || item.id) && <PosterBadge />}
+
                                             <img src={`https://image.tmdb.org/t/p/w500${item.seasonPoster || item.poster_path}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                         </Link>
                                     </div>
@@ -827,7 +827,7 @@ const Profile = () => {
                                     return (
                                         <div key={idx} style={{ position: 'relative', overflow: 'visible', paddingTop: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0' }}>
                                             <Link to={`/tv/${item.seriesId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
-                                                {starSeriesIds.has(item.seriesId || item.id) && <PosterBadge />}
+
                                                 <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                             </Link>
                                         </div>
