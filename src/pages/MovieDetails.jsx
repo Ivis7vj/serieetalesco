@@ -1594,101 +1594,85 @@ const MovieDetails = () => {
                             />
                         </div>
 
-                        <img
-                            src={posterUrl}
-                            alt={title}
-                            className="movie-poster"
-                            style={{
-                                width: 'auto',
-                                maxWidth: '90vw',
-                                height: '55vh', // REDUCED HEIGHT (User Req: ~55-60%)
-                                maxHeight: '600px',
-                                objectFit: 'cover',
-                                borderRadius: '12px', // ROUNDED
-                                boxShadow: '0 20px 60px rgba(0,0,0,0.5)', // Subtle shadow, no drop-shadow
-                                border: 'none', // NO BORDER
-                                position: 'relative',
-                                zIndex: 1
-                            }}
-                        >
-                            {/* POSTER CONTAINER REF */}
-                            <div ref={posterContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
-                                <img
-                                    src={posterUrl}
-                                    alt={title}
-                                    className="movie-poster"
-                                    style={{
-                                        width: 'auto',
-                                        maxWidth: '90vw',
-                                        height: '55vh', // REDUCED HEIGHT (User Req: ~55-60%)
-                                        maxHeight: '600px',
-                                        objectFit: 'cover',
-                                        borderRadius: '12px', // ROUNDED
-                                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)', // Subtle shadow, no drop-shadow
-                                        border: 'none', // NO BORDER
-                                    }}
-                                />
 
-                                {/* EDIT POSTER BUTTON */}
-                                {seasonProgress.completed && (
-                                    <>
-                                        <button
-                                            onClick={() => navigate(`/series/${details.id}/season/${seasonNumber}/posters`)}
-                                            style={{
-                                                position: 'absolute',
-                                                top: '10px',
-                                                right: '10px',
-                                                background: isEditButtonGlowing ? '#FFD600' : 'rgba(0, 0, 0, 0.7)',
-                                                color: isEditButtonGlowing ? '#000' : '#fff',
-                                                border: isEditButtonGlowing ? '2px solid #FFD600' : '1px solid rgba(255, 255, 255, 0.3)',
-                                                borderRadius: '50%',
-                                                width: '40px',
-                                                height: '40px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                cursor: 'pointer',
-                                                backdropFilter: 'blur(4px)',
-                                                transition: 'all 0.3s ease',
-                                                boxShadow: isEditButtonGlowing ? '0 0 20px rgba(255, 214, 0, 0.6)' : 'none',
-                                                zIndex: 10
-                                            }}
-                                        >
-                                            <MdEdit size={20} />
-                                        </button>
+                        {/* POSTER CONTAINER REF */}
+                        <div ref={posterContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
+                            <img
+                                src={posterUrl}
+                                alt={title}
+                                className="movie-poster"
+                                style={{
+                                    width: 'auto',
+                                    maxWidth: '90vw',
+                                    height: '55vh', // REDUCED HEIGHT (User Req: ~55-60%)
+                                    maxHeight: '600px',
+                                    objectFit: 'cover',
+                                    borderRadius: '12px', // ROUNDED
+                                    boxShadow: '0 20px 60px rgba(0,0,0,0.5)', // Subtle shadow, no drop-shadow
+                                    border: 'none', // NO BORDER
+                                }}
+                            />
 
-                                        {/* HINT TEXT */}
-                                        {showEditHint && (
+                            {/* EDIT POSTER BUTTON */}
+                            {seasonProgress.completed && (
+                                <>
+                                    <button
+                                        onClick={() => navigate(`/series/${details.id}/season/${seasonNumber}/posters`)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '10px',
+                                            right: '10px',
+                                            background: isEditButtonGlowing ? '#FFD600' : 'rgba(0, 0, 0, 0.7)',
+                                            color: isEditButtonGlowing ? '#000' : '#fff',
+                                            border: isEditButtonGlowing ? '2px solid #FFD600' : '1px solid rgba(255, 255, 255, 0.3)',
+                                            borderRadius: '50%',
+                                            width: '40px',
+                                            height: '40px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            backdropFilter: 'blur(4px)',
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: isEditButtonGlowing ? '0 0 20px rgba(255, 214, 0, 0.6)' : 'none',
+                                            zIndex: 10
+                                        }}
+                                    >
+                                        <MdEdit size={20} />
+                                    </button>
+
+                                    {/* HINT TEXT */}
+                                    {showEditHint && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '15px',
+                                            left: '100%',
+                                            marginLeft: '15px',
+                                            background: '#FFD600',
+                                            color: '#000',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: 'bold',
+                                            whiteSpace: 'nowrap',
+                                            pointerEvents: 'none',
+                                            animation: 'fadeIn 0.3s ease-out'
+                                        }}>
+                                            You are eligible to edit the poster
                                             <div style={{
                                                 position: 'absolute',
-                                                top: '15px',
-                                                left: '100%',
-                                                marginLeft: '15px',
-                                                background: '#FFD600',
-                                                color: '#000',
-                                                padding: '6px 12px',
-                                                borderRadius: '6px',
-                                                fontSize: '12px',
-                                                fontWeight: 'bold',
-                                                whiteSpace: 'nowrap',
-                                                pointerEvents: 'none',
-                                                animation: 'fadeIn 0.3s ease-out'
-                                            }}>
-                                                You are eligible to edit the poster
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: '-6px',
-                                                    top: '50%',
-                                                    transform: 'translateY(-50%)',
-                                                    borderTop: '6px solid transparent',
-                                                    borderBottom: '6px solid transparent',
-                                                    borderRight: '6px solid #FFD600'
-                                                }} />
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
+                                                left: '-6px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                borderTop: '6px solid transparent',
+                                                borderBottom: '6px solid transparent',
+                                                borderRight: '6px solid #FFD600'
+                                            }} />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 

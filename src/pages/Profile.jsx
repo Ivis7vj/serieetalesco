@@ -802,7 +802,7 @@ const Profile = () => {
                                     <div key={item.id} style={{ position: 'relative', paddingTop: starSeriesIds.has(item.seriesId || item.id) ? '0' : '0', paddingLeft: '0' }}>
                                         <Link to={item.seasonNumber ? `/tv/${item.seriesId || item.id}/season/${item.seasonNumber}` : `/tv/${item.seriesId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
 
-                                            <img src={`https://image.tmdb.org/t/p/w500${item.seasonPoster || item.poster_path}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                            <img src={`https://image.tmdb.org/t/p/w500${resolvePoster(user, item.seriesId || item.id, item.seasonNumber, item.seasonPoster || item.poster_path)}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                         </Link>
                                     </div>
                                 ))}
@@ -818,7 +818,7 @@ const Profile = () => {
                                 if (item.type === 'basket') {
                                     return (
                                         <div key={idx} onClick={() => setBasketModalData(item)} style={{ cursor: 'pointer', display: 'block', width: '100%', border: '1px solid var(--border-color)', aspectRatio: '2/3', position: 'relative', overflow: 'hidden' }}>
-                                            <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                            <img src={`https://image.tmdb.org/t/p/w500${resolvePoster(user, item.seriesId || item.id, item.seasonNumber, item.poster_path)}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                             {/* Basket Badges */}
                                             <div className="diary-season-badge" style={{ top: '6px', right: '6px', fontSize: '0.8rem', padding: '4px 6px' }}>S{item.seasonNumber}</div>
                                             <div className="diary-eps-badge" style={{ bottom: '6px', right: '6px', fontSize: '0.75rem' }}>{item.episodeCount} EPS</div>
@@ -830,7 +830,7 @@ const Profile = () => {
                                         <div key={idx} style={{ position: 'relative', overflow: 'visible', paddingTop: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.seriesId || item.id) ? '20px' : '0' }}>
                                             <Link to={`/tv/${item.seriesId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
 
-                                                <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                                <img src={`https://image.tmdb.org/t/p/w500${resolvePoster(user, item.seriesId || item.id, item.seasonNumber, item.poster_path)}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                             </Link>
                                         </div>
                                     );
