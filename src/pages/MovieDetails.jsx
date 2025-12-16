@@ -9,13 +9,11 @@ import PosterUnlockPopup from '../components/PosterUnlockPopup';
 import StorySticker from '../components/StorySticker';
 import ShareModal from '../components/ShareModal';
 import LoadingPopup from '../components/LoadingPopup';
-import EditPosterHint from '../components/EditPosterHint';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
 import html2canvas from 'html2canvas';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, getDoc, collection, addDoc, query, where, getDocs, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { getResolvedPoster } from '../utils/posterResolution';
 
 import { logActivity } from '../utils/activityLogger';
 import gsap from 'gsap';
@@ -101,10 +99,52 @@ const MovieDetails = () => {
 
     const [seasonDetails, setSeasonDetails] = useState(null);
     const [isWatched, setIsWatched] = useState(false);
-    const [showPosterUnlockPopup, setShowPosterUnlockPopup] = useState(false);
-    const [posterUnlockData, setPosterUnlockData] = useState(null);
-    const [justCompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
-    const [showEditHint, setShowEditHint] = useState(false); // Show edit poster hint
+    // Poster Edit & Scroll State
+    const posterContainerRef = useRef(null);
+    const [showEditHint, setShowEditHint] = useState(false);
+    const [isEditButtonGlowing, setIsEditButtonGlowing] = useState(false);
+
+    // Derived Season Progress
+    const [seasonProgress, setSeasonProgress] = useState({
+        completed: false,
+        rated: false,
+        selectedPoster: null
+    });
+
+    useEffect(() => {
+        if (userData && details && seasonNumber) {
+            const completedKey = String(details.id);
+            const isCompleted = userData.completedSeasons?.[completedKey]?.includes(Number(seasonNumber));
+            const selectedPosterKey = `${details.id}_${seasonNumber}`;
+            const selectedPoster = userData.selectedPosters?.[selectedPosterKey];
+
+            setSeasonProgress({
+                completed: !!isCompleted,
+                rated: false, // TODO: Link to actual rating logic
+                selectedPoster: selectedPoster
+            });
+        }
+    }, [userData, details, seasonNumber]);
+
+    const handlePopupClose = () => {
+        setShowPosterUnlockPopup(false);
+        // Trigger Auto-Scroll flow
+        if (seasonProgress.completed && posterContainerRef.current) {
+            // 1. Scroll to poster
+            posterContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 2. Highlight button
+            setIsEditButtonGlowing(true);
+            setShowEditHint(true);
+
+            // 3. Timer to remove glow/hint
+            setTimeout(() => {
+                setIsEditButtonGlowing(false);
+                setShowEditHint(false);
+            }, 5000);
+        }
+    };
+
 
     // Review Modal State
     const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -302,13 +342,10 @@ const MovieDetails = () => {
 
             // Check if already marked as completed
             if (!completedSeasons.includes(seasonNumber)) {
-                // Mark as completed in Firestore
+                // Mark as completed
                 await updateDoc(userRef, {
                     [`completedSeasons.${completedKey}`]: arrayUnion(seasonNumber)
                 });
-
-                // IMMEDIATELY set local state so edit button shows right away
-                setJustCompletedSeason(seasonNumber);
 
                 // Show unlock popup
                 setShowPosterUnlockPopup(true);
@@ -342,15 +379,8 @@ const MovieDetails = () => {
         const targetSeasonNum = reviewItem.seasonNumber;
         const foundSeason = targetSeasonNum ? seasonsValues.find(s => s.season_number === targetSeasonNum) : null;
 
-        // Use global poster resolution - check user's selected poster first
-        if (targetSeasonNum) {
-            posterPathToUse = getResolvedPoster(
-                userData,
-                details.id,
-                targetSeasonNum,
-                foundSeason?.poster_path || details.poster_path
-            );
-        } else if (foundSeason && foundSeason.poster_path) {
+        // Try to use Season Poster if available (more specific)
+        if (foundSeason && foundSeason.poster_path) {
             posterPathToUse = foundSeason.poster_path;
         } else if (isSeason && seasonDetails?.poster_path) {
             // Fallback to seasonDetails if it matches
@@ -940,11 +970,6 @@ const MovieDetails = () => {
                     await updateDoc(userRef, updatePayload);
                     setEpisodeWatchedIDs(prev => [...prev, episode.id]);
 
-                    // Check if season is now completed - trigger poster unlock
-                    if (seasonNumber && checkSeasonCompletion(seasonNumber)) {
-                        await handleSeasonCompletedFlow(seasonNumber);
-                    }
-
                     // FEATURE: Continue Watching Intelligence
                     // Find Next Episode
                     let nextEpisode = null;
@@ -1475,17 +1500,6 @@ const MovieDetails = () => {
 
     return (
         <div className="movie-details-container">
-            {/* Poster Unlock Popup */}
-            {posterUnlockData && (
-                <PosterUnlockPopup
-                    isOpen={showPosterUnlockPopup}
-                    onClose={() => setShowPosterUnlockPopup(false)}
-                    seriesId={posterUnlockData.seriesId}
-                    seasonNumber={posterUnlockData.seasonNumber}
-                    seriesName={posterUnlockData.seriesName}
-                />
-            )}
-
             <div
                 className="backdrop-overlay"
                 style={{
@@ -1558,6 +1572,7 @@ const MovieDetails = () => {
                             pointerEvents: 'none' // Click through
                         }}>
                             <MdFavorite
+                                ref={heartRef}
                                 size={120}
                                 color="#FF0000"
                                 style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
@@ -1569,69 +1584,6 @@ const MovieDetails = () => {
                                 style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
                             />
                         </div>
-
-                        <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: 1
-                        }}>
-                            <MdPlayArrow
-                                size={120}
-                                color="#FFFFFF"
-                                style={{ opacity: 0, position: 'absolute', transform: 'translate(-50%, -50%)' }}
-                            />
-                        </div>
-
-                        {/* Edit Poster Button - Shows when season is completed */}
-                        {(() => {
-                            // Check both userData (persisted) AND local state (just completed)
-                            const isCompleted =
-                                userData?.completedSeasons?.[String(details.id)]?.includes(seasonNumber) ||
-                                justCompletedSeason === seasonNumber;
-
-                            return seasonNumber && isCompleted ? (
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        navigate(`/series/${details.id}/season/${seasonNumber}/posters`);
-                                    }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '15px',
-                                        right: '15px',
-                                        background: 'rgba(255, 214, 0, 0.9)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '2px solid rgba(255, 214, 0, 1)',
-                                        borderRadius: '50%',
-                                        width: '50px',
-                                        height: '50px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        zIndex: 10,
-                                        transition: 'all 0.3s ease',
-                                        boxShadow: '0 4px 12px rgba(255, 214, 0, 0.4)'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.background = 'rgba(255, 214, 0, 1)';
-                                        e.target.style.transform = 'scale(1.1)';
-                                        e.target.style.boxShadow = '0 6px 20px rgba(255, 214, 0, 0.6)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.background = 'rgba(255, 214, 0, 0.9)';
-                                        e.target.style.transform = 'scale(1)';
-                                        e.target.style.boxShadow = '0 4px 12px rgba(255, 214, 0, 0.4)';
-                                    }}
-                                    title="Edit Season Poster"
-                                >
-                                    <MdEdit size={26} color="#000" />
-                                </button>
-                            ) : null;
-                        })()}
 
                         <img
                             src={posterUrl}
@@ -1649,7 +1601,85 @@ const MovieDetails = () => {
                                 position: 'relative',
                                 zIndex: 1
                             }}
-                        />
+                        >
+                            {/* POSTER CONTAINER REF */}
+                            <div ref={posterContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
+                                <img
+                                    src={posterUrl}
+                                    alt={title}
+                                    className="movie-poster"
+                                    style={{
+                                        width: 'auto',
+                                        maxWidth: '90vw',
+                                        height: '55vh', // REDUCED HEIGHT (User Req: ~55-60%)
+                                        maxHeight: '600px',
+                                        objectFit: 'cover',
+                                        borderRadius: '12px', // ROUNDED
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)', // Subtle shadow, no drop-shadow
+                                        border: 'none', // NO BORDER
+                                    }}
+                                />
+
+                                {/* EDIT POSTER BUTTON */}
+                                {seasonProgress.completed && (
+                                    <>
+                                        <button
+                                            onClick={() => navigate(`/series/${details.id}/season/${seasonNumber}/posters`)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                right: '10px',
+                                                background: isEditButtonGlowing ? '#FFD600' : 'rgba(0, 0, 0, 0.7)',
+                                                color: isEditButtonGlowing ? '#000' : '#fff',
+                                                border: isEditButtonGlowing ? '2px solid #FFD600' : '1px solid rgba(255, 255, 255, 0.3)',
+                                                borderRadius: '50%',
+                                                width: '40px',
+                                                height: '40px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                backdropFilter: 'blur(4px)',
+                                                transition: 'all 0.3s ease',
+                                                boxShadow: isEditButtonGlowing ? '0 0 20px rgba(255, 214, 0, 0.6)' : 'none',
+                                                zIndex: 10
+                                            }}
+                                        >
+                                            <MdEdit size={20} />
+                                        </button>
+
+                                        {/* HINT TEXT */}
+                                        {showEditHint && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '15px',
+                                                left: '100%',
+                                                marginLeft: '15px',
+                                                background: '#FFD600',
+                                                color: '#000',
+                                                padding: '6px 12px',
+                                                borderRadius: '6px',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                whiteSpace: 'nowrap',
+                                                pointerEvents: 'none',
+                                                animation: 'fadeIn 0.3s ease-out'
+                                            }}>
+                                                You are eligible to edit the poster
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '-6px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    borderTop: '6px solid transparent',
+                                                    borderBottom: '6px solid transparent',
+                                                    borderRight: '6px solid #FFD600'
+                                                }} />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                     </div>
                 </div>
 

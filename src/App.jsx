@@ -27,45 +27,7 @@ import { AuthProvider } from './context/AuthContext';
 
 import ErrorBoundary from './components/ErrorBoundary';
 
-const ConstructionMode = () => (
-  <div style={{
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100vw',
-    height: '100vh',
-    backgroundColor: '#000',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 99999,
-    color: '#FFD600',
-    fontFamily: 'Impact, sans-serif',
-    textAlign: 'center',
-    padding: '20px'
-  }}>
-    <div style={{ fontSize: '80px', marginBottom: '20px' }}>🚧</div>
-    <h1 style={{ fontSize: '48px', textTransform: 'uppercase', marginBottom: '20px' }}>
-      Whoops! Hold Your Horses! 🐴
-    </h1>
-    <p style={{ fontSize: '24px', color: '#fff', maxWidth: '600px', lineHeight: '1.5', fontFamily: 'Arial, sans-serif' }}>
-      Our highly trained hamsters 🐹 are currently rewriting the entire codebase because they didn't like the color scheme.
-    </p>
-    <p style={{ fontSize: '18px', color: '#888', marginTop: '40px', fontFamily: 'Arial, sans-serif' }}>
-      (We're bribing them with carrots. Back soon!)
-    </p>
-  </div>
-);
-
 function App() {
-  // UNCOMMENT TO EXIT CONSTRUCTION MODE
-  const IS_UNDER_CONSTRUCTION = true;
-
-  if (IS_UNDER_CONSTRUCTION) {
-    return <ConstructionMode />;
-  }
-
   return (
     <ErrorBoundary>
       <ThemeProvider>
