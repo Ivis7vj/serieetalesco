@@ -1589,7 +1589,7 @@ const MovieDetails = () => {
                                 userData?.completedSeasons?.[String(details.id)]?.includes(seasonNumber) ||
                                 justCompletedSeason === seasonNumber;
 
-                            return seasonNumber ? (
+                            return seasonNumber && isCompleted ? (
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
