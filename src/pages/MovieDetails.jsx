@@ -102,6 +102,7 @@ const MovieDetails = () => {
     const [isWatched, setIsWatched] = useState(false);
     const [showPosterUnlockPopup, setShowPosterUnlockPopup] = useState(false);
     const [posterUnlockData, setPosterUnlockData] = useState(null);
+    const [justCompletedSeason, setJustCompletedSeason] = useState(null); // Track locally completed season
 
     // Review Modal State
     const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -299,10 +300,13 @@ const MovieDetails = () => {
 
             // Check if already marked as completed
             if (!completedSeasons.includes(seasonNumber)) {
-                // Mark as completed
+                // Mark as completed in Firestore
                 await updateDoc(userRef, {
                     [`completedSeasons.${completedKey}`]: arrayUnion(seasonNumber)
                 });
+
+                // IMMEDIATELY set local state so edit button shows right away
+                setJustCompletedSeason(seasonNumber);
 
                 // Show unlock popup
                 setShowPosterUnlockPopup(true);
@@ -1580,18 +1584,12 @@ const MovieDetails = () => {
 
                         {/* Edit Poster Button - Shows when season is completed */}
                         {(() => {
-                            const seriesKey = String(details.id);
-                            const isCompleted = userData?.completedSeasons?.[seriesKey]?.includes(seasonNumber);
-                            console.log('Edit Button Debug:', {
-                                seasonNumber,
-                                seriesKey,
-                                completedSeasons: userData?.completedSeasons,
-                                isCompleted,
-                                shouldShow: seasonNumber && isCompleted
-                            });
+                            // Check both userData (persisted) AND local state (just completed)
+                            const isCompleted =
+                                userData?.completedSeasons?.[String(details.id)]?.includes(seasonNumber) ||
+                                justCompletedSeason === seasonNumber;
 
-                            // Show button if viewing a season page
-                            return seasonNumber ? (
+                            return seasonNumber && isCompleted ? (
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -1602,30 +1600,33 @@ const MovieDetails = () => {
                                         position: 'absolute',
                                         top: '15px',
                                         right: '15px',
-                                        background: isCompleted ? 'rgba(255, 214, 0, 0.9)' : 'rgba(100, 100, 100, 0.6)',
+                                        background: 'rgba(255, 214, 0, 0.9)',
                                         backdropFilter: 'blur(10px)',
-                                        border: `2px solid ${isCompleted ? 'rgba(255, 214, 0, 0.8)' : 'rgba(150, 150, 150, 0.4)'}`,
+                                        border: '2px solid rgba(255, 214, 0, 1)',
                                         borderRadius: '50%',
-                                        width: '45px',
-                                        height: '45px',
+                                        width: '50px',
+                                        height: '50px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         cursor: 'pointer',
-                                        zIndex: 2,
-                                        transition: 'all 0.3s ease'
+                                        zIndex: 10,
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 4px 12px rgba(255, 214, 0, 0.4)'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.target.style.background = 'rgba(255, 214, 0, 1)';
                                         e.target.style.transform = 'scale(1.1)';
+                                        e.target.style.boxShadow = '0 6px 20px rgba(255, 214, 0, 0.6)';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.target.style.background = isCompleted ? 'rgba(255, 214, 0, 0.9)' : 'rgba(100, 100, 100, 0.6)';
+                                        e.target.style.background = 'rgba(255, 214, 0, 0.9)';
                                         e.target.style.transform = 'scale(1)';
+                                        e.target.style.boxShadow = '0 4px 12px rgba(255, 214, 0, 0.4)';
                                     }}
-                                    title={isCompleted ? "Edit Season Poster (Season Completed!)" : "Edit Season Poster (Complete all episodes to unlock all posters)"}
+                                    title="Edit Season Poster"
                                 >
-                                    <MdEdit size={24} color={isCompleted ? "#000" : "#fff"} />
+                                    <MdEdit size={26} color="#000" />
                                 </button>
                             ) : null;
                         })()}
