@@ -1,14 +1,29 @@
 import React, { forwardRef } from 'react';
 import { MdStar } from 'react-icons/md';
+import { resolvePoster } from '../utils/posterResolution';
 
 const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted }, ref) => {
     // Inline SVG placeholders (no external network calls needed)
     const defaultPosterSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="750"%3E%3Crect width="500" height="750" fill="%23333"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="24" fill="%23fff"%3ENo Image%3C/text%3E%3C/svg%3E';
     const defaultPfpSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Ccircle cx="75" cy="75" r="75" fill="%23666"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="%23fff"%3EU%3C/text%3E%3C/svg%3E';
 
-    // Bypass cache for CORS to work with html2canvas
-    const posterUrl = movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}?v=${new Date().getTime()}`
+    // Resolve dynamic poster
+    // If seasonCompleted is true, we assume movie contains season info or we try to resolve specifics
+    // movie object structure varies, we need: seriesId (movie.id), seasonNumber (movie.seasonNumber?)
+
+    // Attempt to extract Series ID and Season Number
+    // Note: 'movie' prop is often just the TMDB series object or a constructed activity item
+    const seriesId = movie.seriesId || movie.id;
+    // We try to find season number from movie prop or props
+    const seasonNum = movie.seasonNumber || (movie.seasonEpisode ? parseInt(movie.seasonEpisode.replace('S', '')) : null);
+
+    const resolvedPath = resolvePoster(user, seriesId, seasonNum, null);
+
+    // Use resolved path > movie.poster_path > default
+    const finalPosterPath = resolvedPath || movie.poster_path;
+
+    const posterUrl = finalPosterPath
+        ? `https://image.tmdb.org/t/p/w500${finalPosterPath}?v=${new Date().getTime()}`
         : defaultPosterSvg;
 
     const pfpUrl = user?.photoURL

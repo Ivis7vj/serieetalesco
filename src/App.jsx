@@ -26,6 +26,9 @@ import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
 
 import ErrorBoundary from './components/ErrorBoundary';
+import Maintenance from './pages/Maintenance';
+
+const MAINTENANCE_MODE = true;
 
 function App() {
   return (
@@ -33,37 +36,41 @@ function App() {
       <ThemeProvider>
         <NotificationProvider>
           <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
+            {MAINTENANCE_MODE ? (
+              <Maintenance />
+            ) : (
+              <Routes>
+                <Route path="/login" element={<Login />} />
 
-              {/* Public Routes within Layout */}
-              <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/news" element={<News />} />
-                <Route path="/friends" element={<Friends />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/movie/:id" element={<MovieDetails />} />
-                <Route path="/tv/:id" element={<MovieDetails />} />
-                <Route path="/tv/:id/season/:seasonNumber" element={<MovieDetails />} />
-                <Route path="/series/:id/season/:seasonNumber/posters" element={<PosterSelection />} />
-                <Route path="/tv/:id/season/:seasonNumber/episode/:episodeNumber" element={<EpisodeDetails />} />
-                <Route path="/person/:id" element={<Biography />} />
+                {/* Public Routes within Layout */}
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/news" element={<News />} />
+                  <Route path="/friends" element={<Friends />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/movie/:id" element={<MovieDetails />} />
+                  <Route path="/tv/:id" element={<MovieDetails />} />
+                  <Route path="/tv/:id/season/:seasonNumber" element={<MovieDetails />} />
+                  <Route path="/tv/:id/season/:seasonNumber/poster" element={<PosterSelection />} />
+                  <Route path="/tv/:id/season/:seasonNumber/episode/:episodeNumber" element={<EpisodeDetails />} />
+                  <Route path="/person/:id" element={<Biography />} />
 
-                {/* Protected Routes */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/watchlist" element={<Watchlist />} />
-                  <Route path="/reviews" element={<UserReview />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/:uid" element={<Profile />} />
-                  <Route path="/edit-profile" element={<EditProfile />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile/:uid/followers" element={<Followers />} />
-                  <Route path="/profile/:uid/following" element={<Following />} />
+                  {/* Protected Routes */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/watchlist" element={<Watchlist />} />
+                    <Route path="/reviews" element={<UserReview />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/:uid" element={<Profile />} />
+                    <Route path="/edit-profile" element={<EditProfile />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/profile/:uid/followers" element={<Followers />} />
+                    <Route path="/profile/:uid/following" element={<Following />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            )}
           </AuthProvider>
         </NotificationProvider>
       </ThemeProvider>

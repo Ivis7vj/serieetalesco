@@ -4,17 +4,25 @@
  */
 
 export const resolvePoster = (userData, seriesId, seasonNumber, fallbackPoster) => {
-    if (!userData || !seriesId) return fallbackPoster;
-
-    // 1. Check for specific season selection
-    // Structure: selectedPosters: { "seriesId_seasonNumber": "path" }
-    if (seasonNumber) {
+    // Priority 1: User-selected season poster (if user exists and has a selection)
+    if (userData && seriesId && seasonNumber) {
         const seasonKey = `${seriesId}_${seasonNumber}`;
         if (userData.selectedPosters?.[seasonKey]) {
             return userData.selectedPosters[seasonKey];
         }
     }
 
-    // 2. Fallback to provided poster (usually TMDB default)
-    return fallbackPoster;
+    // Priority 2: TMDB Season Default (usually passed as fallbackPoster if it's a season object)
+    // IMPORTANT: The caller is responsible for passing the correct fallback. 
+    // If resolving for a season, 'fallbackPoster' should be that season's poster_path.
+    // If resolving for a series main card, 'fallbackPoster' might be series.poster_path.
+    if (fallbackPoster) return fallbackPoster;
+
+    // Priority 3: Series Fallback (Not handled here explicitly as we return fallbackPoster, 
+    // but the caller should usually provide the series poster as a last resort if season poster is missing)
+    return null;
+};
+
+export const getSeasonPosterKey = (seriesId, seasonNumber) => {
+    return `${seriesId}_${seasonNumber}`;
 };

@@ -640,7 +640,8 @@ const Profile = () => {
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                            {/* Earned Posters Section REMOVED (Moved to Tab) */}
+                        </div >
                     );
                 case 'Activity':
                     const rawActivityItems = [
@@ -731,6 +732,10 @@ const Profile = () => {
                                     actionText = ' watched';
                                 } else if (item.type === 'liked') {
                                     actionText = ' liked';
+                                } else if (item.type === 'selected_poster') {
+                                    // STRICT TEXT: "{username} customized the Season {X} poster"
+                                    // The user name is part of the header "You/User", so we just need the action part.
+                                    actionText = ` customized the Season ${item.seasonNumber} poster`;
                                 } else if (item.isGroup && item.episodeCount > 1) {
                                     actionText = ` added Season ${item.seasonNumber} to watchlist`;
                                 } else {
@@ -790,6 +795,60 @@ const Profile = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+                    );
+
+                case 'Earned':
+                    return (
+                        <div className="earned-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '20px', padding: '10px 0' }}>
+                            {user.selectedPosters && Object.keys(user.selectedPosters).length > 0 ? (
+                                Object.entries(user.selectedPosters).map(([key, path]) => {
+                                    const [seriesId, seasonNum] = key.split('_');
+
+                                    // Find Series Name
+                                    const watchedItem = user.watched?.find(w => String(w.seriesId || w.id) === String(seriesId));
+                                    const starItem = !watchedItem ? user.starSeries?.find(s => String(s.id) === String(seriesId)) : null;
+                                    const reviewItem = (!watchedItem && !starItem) ? user.reviews?.find(r => String(r.tmdbId) === String(seriesId)) : null;
+                                    const seriesName = watchedItem?.name || watchedItem?.seriesName || starItem?.name || reviewItem?.name || "Series";
+                                    const displaySeason = seasonNum && seasonNum !== 'undefined' ? seasonNum : '?';
+
+                                    return (
+                                        <Link
+                                            key={key}
+                                            to={`/tv/${seriesId}/season/${displaySeason !== '?' ? displaySeason : 1}`}
+                                            style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                                        >
+                                            <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', borderRadius: '12px', overflow: 'hidden', border: '1px solid #333' }}>
+                                                <img
+                                                    src={`https://image.tmdb.org/t/p/w342${path}`}
+                                                    alt="Earned Poster"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                                {/* Season Badge INSIDE Poster */}
+                                                <div style={{
+                                                    position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
+                                                    background: '#FFD600', color: '#000',
+                                                    fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px',
+                                                    fontWeight: '800', whiteSpace: 'nowrap', boxShadow: '0 2px 5px rgba(0,0,0,0.5)'
+                                                }}>
+                                                    SEASON {displaySeason}
+                                                </div>
+                                            </div>
+
+                                            {/* Series Name BELOW Poster */}
+                                            <div style={{
+                                                color: '#fff', fontSize: '0.85rem', fontWeight: 'bold',
+                                                textAlign: 'center', lineHeight: '1.2',
+                                                maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                            }}>
+                                                {seriesName}
+                                            </div>
+                                        </Link>
+                                    );
+                                })
+                            ) : (
+                                <p style={{ color: '#888', gridColumn: '1 / -1', textAlign: 'center', marginTop: '40px' }}>No earned posters yet.</p>
+                            )}
                         </div>
                     );
 
@@ -1144,7 +1203,7 @@ const Profile = () => {
             </div>
 
             <nav className="nav-scroll-container">
-                {['Profile', 'Diary', 'Activity', 'Watchlist', 'Liked'].map(tab => (
+                {['Profile', 'Diary', 'Activity', 'Earned', 'Watchlist', 'Liked'].map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)} className="nav-tab-btn" style={{ color: activeTab === tab ? '#FFFFFF' : 'var(--text-muted)', fontWeight: activeTab === tab ? 'bold' : 'normal', borderBottom: activeTab === tab ? '3px solid var(--accent-color)' : '3px solid transparent' }}>
                         {tab}
                     </button>

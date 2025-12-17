@@ -117,13 +117,15 @@ const Friends = () => {
         return "Just now";
     };
 
-    const getActionText = (type) => {
+    const getActionText = (item) => {
+        const type = item.actionType;
         switch (type) {
             case 'liked': return 'liked';
             case 'watched': return 'watched';
             case 'watchlist': return 'added to watchlist';
             case 'review': return 'reviewed';
-            case 'selected_poster': return 'unlocked season poster';
+            case 'selected_poster':
+                return `customized the Season ${item.seasonNumber} poster of`;
             default: return 'interacted with';
         }
     };
@@ -197,7 +199,7 @@ const Friends = () => {
                                         <div className="activity-meta-row">
                                             <div className="meta-left">
                                                 <Link to={`/profile/${item.userId}`} className="meta-username">{item.username}</Link>
-                                                <span className="meta-action">{getActionText(item.actionType)}</span>
+                                                <span className="meta-action">{getActionText(item)}</span>
                                             </div>
                                             <span className="meta-time">{getTimeAgo(item.timestamp)}</span>
                                         </div>

@@ -144,19 +144,30 @@ const MovieDetails = () => {
     const handlePopupClose = () => {
         setShowPosterUnlockPopup(false);
         // Trigger Auto-Scroll flow
-        if (seasonProgress.completed && posterContainerRef.current) {
-            // 1. Scroll to poster
+        triggerAutoScroll();
+    };
+
+    const handleSeasonCompletionClose = () => {
+        setShowSeasonCompletion(false);
+        triggerAutoScroll(); // Reuse the same logic
+    };
+
+    const triggerAutoScroll = () => {
+        if (posterContainerRef.current) {
+            // 1. Scroll to poster (Always scroll when triggered)
             posterContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // 2. Highlight button
-            setIsEditButtonGlowing(true);
-            setShowEditHint(true);
+            // 2. Highlight button (Only if completed)
+            if (seasonProgress.completed) {
+                setIsEditButtonGlowing(true);
+                setShowEditHint(true);
 
-            // 3. Timer to remove glow/hint
-            setTimeout(() => {
-                setIsEditButtonGlowing(false);
-                setShowEditHint(false);
-            }, 5000);
+                // 3. Timer to remove glow/hint
+                setTimeout(() => {
+                    setIsEditButtonGlowing(false);
+                    setShowEditHint(false);
+                }, 5000);
+            }
         }
     };
 
@@ -937,11 +948,7 @@ const MovieDetails = () => {
                                 });
                                 setShowSeasonCompletion(true);
 
-                                // Auto Dismiss
-                                setTimeout(() => {
-                                    setShowSeasonCompletion(false);
-                                    // Optional: Show "Write Review" hint here via another state if desired, but keeping minimal as requested.
-                                }, 3000);
+                                // REMOVED Auto-Dismiss: User must click OK
                             }
                         }
                     }
@@ -1650,8 +1657,8 @@ const MovieDetails = () => {
                             {/* EDIT POSTER BUTTON */}
                             {seasonProgress.completed && (
                                 <>
-                                    <button
-                                        onClick={() => navigate(`/series/${details.id}/season/${seasonNumber}/posters`)}
+                                    <Link
+                                        to={`/tv/${details.id}/season/${selectedSeason}/poster`}
                                         style={{
                                             position: 'absolute',
                                             top: '10px',
@@ -1669,11 +1676,13 @@ const MovieDetails = () => {
                                             backdropFilter: 'blur(4px)',
                                             transition: 'all 0.3s ease',
                                             boxShadow: isEditButtonGlowing ? '0 0 20px rgba(255, 214, 0, 0.6)' : 'none',
-                                            zIndex: 10
+                                            zIndex: 10,
+                                            textDecoration: 'none'
                                         }}
+                                        title="Edit Season Poster"
                                     >
                                         <MdEdit size={20} />
-                                    </button>
+                                    </Link>
 
                                     {/* HINT TEXT */}
                                     {showEditHint && (
@@ -2486,7 +2495,7 @@ const MovieDetails = () => {
                 opacity: showSeasonCompletion ? 1 : 0,
                 transition: 'opacity 0.4s ease',
                 backdropFilter: 'blur(5px)'
-            }} onClick={() => setShowSeasonCompletion(false)}>
+            }}>
                 <div style={{
                     background: '#0a0a0a',
                     padding: '40px',
@@ -2542,6 +2551,36 @@ const MovieDetails = () => {
                     }}>
                         Great job catching up!
                     </p>
+
+                    <button
+                        onClick={handleSeasonCompletionClose}
+                        style={{
+                            background: '#FFD600',
+                            color: '#000',
+                            fontFamily: 'Anton, sans-serif',
+                            textTransform: 'uppercase',
+                            fontSize: '1rem',
+                            letterSpacing: '1px',
+                            border: 'none',
+                            padding: '12px 40px',
+                            borderRadius: '4px',
+                            marginTop: '25px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            boxShadow: '0 4px 15px rgba(255, 214, 0, 0.3)',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        }}
+                        onMouseEnter={e => {
+                            e.target.style.transform = 'scale(1.05)';
+                            e.target.style.boxShadow = '0 6px 20px rgba(255, 214, 0, 0.5)';
+                        }}
+                        onMouseLeave={e => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.boxShadow = '0 4px 15px rgba(255, 214, 0, 0.3)';
+                        }}
+                    >
+                        OK
+                    </button>
                 </div>
             </div>
 

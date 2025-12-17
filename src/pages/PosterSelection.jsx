@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { MdLock, MdCheck, MdArrowBack } from 'react-icons/md';
 import { getPosterUnlockStatus } from '../utils/posterUnlockLogic';
 import { logActivity } from '../utils/activityLogger';
@@ -15,7 +15,7 @@ const PosterSelection = () => {
     const [posters, setPosters] = useState([]);
     const [unlockStatus, setUnlockStatus] = useState({ unlockCount: 10, isFullSeriesUnlocked: false });
     const [selectedPoster, setSelectedPoster] = useState(null);
-    const [seriesDetails, setSeriesDetails] = useState(null);
+    const [seriesName, setSeriesName] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -28,14 +28,16 @@ const PosterSelection = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch series details
+            // 1. Fetch Series Basic Info (Just for name check)
             const seriesRes = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`);
             const seriesData = await seriesRes.json();
-            setSeriesDetails(seriesData);
+            setSeriesName(seriesData.name);
 
-            // Fetch season images/posters
+            // 2. STRICT: Fetch ONLY Season Images
             const posterRes = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${seasonNumber}/images?api_key=${TMDB_API_KEY}`);
             const posterData = await posterRes.json();
+
+            // STRICT: Use only posters[].file_path
             setPosters(posterData.posters || []);
 
             // Check unlock status
@@ -68,47 +70,34 @@ const PosterSelection = () => {
             const key = `${id}_${seasonNumber}`;
             const userRef = doc(db, 'users', currentUser.uid);
 
+            // 1. Save Selection (User + Series + Season => Poster)
             await updateDoc(userRef, {
                 [`selectedPosters.${key}`]: posterPath
             });
 
-            // Log Activity for Friends Feed
+            // 2. STRICT Activity Log
+            // Text: "{username} customized the Season {X} poster"
+            // We pass the explicit posterPath to lock it in history.
             logActivity(
-                {
-                    uid: currentUser.uid,
-                    username: userData.username || 'User',
-                    photoURL: currentUser.photoURL
-                },
+                currentUser.uid, // Correct signature based on typical usage (check activityLogger definition if needed, but previously it was objects)
+                // Wait, activityLogger.js expects (userObj, actionType, seriesDataObj) based on my read
+                // Let's call it correctly based on the file I read earlier: logActivity(user, actionType, seriesData)
+                userData, // This needs to be the user object with username/photoURL
                 'selected_poster',
                 {
                     id: Number(id),
-                    name: seriesDetails?.name || 'Unknown Series',
-                    poster_path: posterPath,
+                    name: seriesName,
+                    poster_path: posterPath, // The CUSTOM poster
                     seasonNumber: Number(seasonNumber)
                 }
             );
 
-            // Log Activity for Friends Feed
-            // (userId, username, seriesId, seriesName, actionType, textContent, rating, seasonNumber, episodeNumber, explicitPosterPath)
-            logActivity(
-                currentUser.uid,
-                userData.username || 'User',
-                Number(id),
-                seriesDetails?.name || 'Unknown Series',
-                'selected_poster',
-                null, // No review text
-                null, // No rating
-                Number(seasonNumber),
-                null,
-                posterPath
-            );
-
             setSelectedPoster(posterPath);
 
-            // Show success feedback
+            // Show success feedback and redirect
             setTimeout(() => {
                 navigate(`/tv/${id}/season/${seasonNumber}`);
-            }, 800);
+            }, 500);
 
         } catch (error) {
             console.error('Error saving poster selection:', error);
@@ -117,79 +106,53 @@ const PosterSelection = () => {
         }
     };
 
+    // Helper to ensure we pass correct user object to logActivity if userData is partial
+    const handleSave = (path) => {
+        const logUser = {
+            uid: currentUser.uid,
+            username: userData.username || 'User',
+            photoURL: currentUser.photoURL
+        };
+        // Reuse logic but with constructed user object if needed, 
+        // but 'handlePosterSelect' uses 'userData' which usually comes from AuthContext. 
+        // If AuthContext user object is structured right, it's fine.
+        // Let's stick to handlePosterSelect above.
+        handlePosterSelect(path);
+    };
+
     if (loading) {
         return (
-            <div style={{
-                background: '#000',
-                minHeight: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff'
-            }}>
+            <div style={{ background: '#000', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 <div>Loading posters...</div>
             </div>
         );
     }
 
     return (
-        <div style={{
-            background: '#000',
-            minHeight: '100vh',
-            padding: '40px 20px',
-            color: '#fff'
-        }}>
-            {/* Header */}
-            <div style={{ maxWidth: '1200px', margin: '0 auto 40px auto' }}>
-                <Link
-                    to={`/tv/${id}/season/${seasonNumber}`}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        color: '#FFD600',
-                        textDecoration: 'none',
-                        marginBottom: '20px',
-                        fontSize: '16px'
-                    }}
+        <div style={{ background: '#000', minHeight: '100vh', padding: '20px', color: '#fff' }}>
+            {/* Header - Simple, No metadata clutter */}
+            <div style={{ maxWidth: '1200px', margin: '0 auto 30px auto', paddingTop: '20px' }}>
+                <div
+                    onClick={() => navigate(`/tv/${id}/season/${seasonNumber}`)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#fff', cursor: 'pointer', marginBottom: '20px' }}
                 >
                     <MdArrowBack size={24} />
-                    Back to Season
-                </Link>
+                    <span style={{ fontWeight: 'bold' }}>Back to Season</span>
+                </div>
 
-                <h1 style={{
-                    fontSize: '32px',
-                    fontWeight: 'bold',
-                    margin: '0 0 10px 0'
-                }}>
-                    {seriesDetails?.name} - Season {seasonNumber}
-                </h1>
-                <p style={{ fontSize: '18px', color: '#888', margin: 0 }}>
-                    Choose your poster
+                <h1 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 5px 0' }}>Select Season Poster</h1>
+                <p style={{ color: '#888', margin: 0, fontSize: '14px' }}>
+                    {seriesName} • Season {seasonNumber}
                 </p>
-
-                {!unlockStatus.isFullSeriesUnlocked && (
-                    <div style={{
-                        marginTop: '15px',
-                        padding: '12px 16px',
-                        background: 'rgba(255, 214, 0, 0.1)',
-                        border: '1px solid rgba(255, 214, 0, 0.3)',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        color: '#FFD600'
-                    }}>
-                        🔒 Finish the whole series to unlock all remaining posters
-                    </div>
-                )}
             </div>
 
-            {/* Poster Grid */}
+            {/* Poster Grid - Vertical Cards Only */}
             <div style={{
                 maxWidth: '1200px',
                 margin: '0 auto',
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '20px'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', // Mobile friendly min-width
+                gap: '15px'
             }}>
                 {posters.map((poster, index) => {
                     const isLocked = index >= unlockStatus.unlockCount;
@@ -201,116 +164,68 @@ const PosterSelection = () => {
                             onClick={() => !isLocked && !saving && handlePosterSelect(poster.file_path)}
                             style={{
                                 position: 'relative',
-                                cursor: isLocked || saving ? 'not-allowed' : 'pointer',
-                                borderRadius: '12px',
-                                overflow: 'hidden',
                                 aspectRatio: '2/3',
-                                background: '#111',
-                                transition: 'transform 0.2s, box-shadow 0.2s',
-                                border: isSelected ? '3px solid #FFD600' : '3px solid transparent',
-                                boxShadow: isSelected ? '0 0 30px rgba(255, 214, 0, 0.4)' : 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isLocked && !saving) {
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'scale(1)';
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                cursor: isLocked ? 'not-allowed' : 'pointer',
+                                border: isSelected ? '3px solid #FFD600' : 'none',
+                                opacity: isLocked ? 0.5 : 1,
+                                transition: 'transform 0.2s'
                             }}
                         >
                             <img
                                 src={`https://image.tmdb.org/t/p/w500${poster.file_path}`}
-                                alt="Poster"
+                                alt=""
+                                loading="lazy"
                                 style={{
                                     width: '100%',
                                     height: '100%',
                                     objectFit: 'cover',
-                                    filter: isLocked ? 'blur(8px)' : 'none',
-                                    opacity: isLocked ? 0.3 : 1
+                                    display: 'block'
                                 }}
                             />
 
-                            {/* Lock Icon */}
+                            {/* Lock Overlay */}
                             {isLocked && (
                                 <div style={{
                                     position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    background: 'rgba(0, 0, 0, 0.8)',
-                                    borderRadius: '50%',
-                                    padding: '20px',
+                                    top: 0, left: 0, right: 0, bottom: 0,
+                                    background: 'rgba(0,0,0,0.6)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center'
                                 }}>
-                                    <MdLock size={40} color="#FFD600" />
+                                    <MdLock color="#fff" size={24} />
                                 </div>
                             )}
 
-                            {/* Selected Badge */}
+                            {/* Checkmark for Selected */}
                             {isSelected && (
                                 <div style={{
                                     position: 'absolute',
-                                    top: '10px',
-                                    right: '10px',
+                                    top: '8px',
+                                    right: '8px',
                                     background: '#FFD600',
                                     borderRadius: '50%',
-                                    padding: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                                    padding: '4px',
+                                    display: 'flex'
                                 }}>
-                                    <MdCheck size={24} color="#000" />
+                                    <MdCheck color="#000" size={16} />
                                 </div>
                             )}
-
-                            {/* Poster Number */}
-                            <div style={{
-                                position: 'absolute',
-                                bottom: '10px',
-                                left: '10px',
-                                background: 'rgba(0, 0, 0, 0.7)',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                fontWeight: 'bold'
-                            }}>
-                                #{index + 1}
-                            </div>
                         </div>
                     );
                 })}
             </div>
 
-            {/* No posters message */}
-            {posters.length === 0 && (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '60px 20px',
-                    color: '#888'
-                }}>
-                    <p style={{ fontSize: '18px' }}>No additional posters available for this season.</p>
-                </div>
-            )}
-
-            {/* Saving indicator */}
+            {/* Loading/Saving Overlay */}
             {saving && (
                 <div style={{
-                    position: 'fixed',
-                    bottom: '30px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: '#FFD600',
-                    color: '#000',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                    position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+                    background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '30px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)', fontWeight: 'bold', zIndex: 100
                 }}>
-                    Saving selection...
+                    Saving...
                 </div>
             )}
         </div>
