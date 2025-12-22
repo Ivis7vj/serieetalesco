@@ -40,11 +40,20 @@ import UpdateManager from './components/UpdateManager';
 import GlobalErrorAutomation from './components/GlobalErrorAutomation';
 import { CapacitorUpdater } from '@capgo/capacitor-updater'; // Import
 
-// ... inside App component ...
 // Notify Capacitor Updater that the app has launched successfully
-// This prevents rollback to the previous version
+// We use a small delay to ensuring the Native Bridge is fully ready
 React.useEffect(() => {
-  CapacitorUpdater.notifyAppReady();
+  const notifyPlugin = async () => {
+    try {
+      // Wait 1s to be safe
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await CapacitorUpdater.notifyAppReady();
+      console.log("✅ OTA: App Ready Notified Successfully");
+    } catch (e) {
+      console.error("❌ OTA: Notification Failed", e);
+    }
+  };
+  notifyPlugin();
 }, []);
 import { Capacitor } from '@capacitor/core';
 import PremiumLoader from './components/PremiumLoader';
