@@ -1,0 +1,179 @@
+/* ActivityRenderer.css */
+
+/* --- SHARED --- */
+.ar-container {
+    padding: 12px 0;
+    border-bottom: 1px solid #111;
+    /* Subtle divider or none as requested? "No hard dividers (use spacing)" */
+    /* Request says "No hard dividers (use spacing)" but some separation is nice. I'll use margin instead of border if preferred. */
+    border-bottom: none;
+    margin-bottom: 8px;
+}
+
+.ar-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #222;
+    border: 1px solid #333;
+}
+
+.ar-meta-text {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.4;
+}
+
+.ar-meta-text strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.ar-time {
+    font-size: 11px;
+    color: #555;
+    white-space: nowrap;
+}
+
+/* --- TEXT ONLY ROW (Watch / Watchlist) --- */
+.ar-text-row {
+    display: flex;
+    align-items: center;
+    /* Center vertically specifically for text rows */
+    gap: 12px;
+}
+
+.ar-text-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.ar-secondary-text {
+    font-size: 14px;
+    color: #fff;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ar-sub-info {
+    font-size: 12px;
+    color: #666;
+}
+
+/* --- REVIEW ROW (Poster Required) --- */
+.ar-review-row {
+    display: flex;
+    gap: 12px;
+}
+
+.ar-poster-container {
+    width: 48px;
+    /* Fixed small size */
+    flex-shrink: 0;
+}
+
+.ar-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #222;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    /* Subtle shadow */
+}
+
+.ar-review-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ar-review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.ar-review-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.ar-review-season {
+    font-size: 12px;
+    color: #888;
+}
+
+.ar-rating {
+    display: flex;
+    gap: 1px;
+    color: #FFD600;
+    /* Accent Yellow */
+}
+
+.ar-review-body {
+    font-size: 13px;
+    color: #ccc;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+/* Truncation for Feed */
+.ar-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Friend Feed Specifics */
+.ar-friend-card {
+    background: #111;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.ar-friend-poster {
+    width: 60px;
+    /* Slightly larger for Cards */
+    aspect-ratio: 2/3;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.ar-friend-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.ar-friend-header-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.ar-friend-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ar-friend-username {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+}

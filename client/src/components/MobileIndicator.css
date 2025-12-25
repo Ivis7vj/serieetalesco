@@ -1,0 +1,118 @@
+.mobile-indicator {
+    position: absolute;
+    background-color: #000;
+    /* Pure Black or #1a1a1a */
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    pointer-events: none;
+    /* Let touches pass through (or not? "No blocking UI") */
+    z-index: 9999;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+    animation: fadeInScale 0.3s ease-out forwards;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Yellow accent arrow or border? Reference said "Yellow accent arrow". */
+/* We'll use a pseudo-element for the arrow */
+
+.mobile-indicator::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+/* Positions */
+
+/* TOP (Arrow on Bottom) */
+.mobile-indicator-top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 12px;
+}
+
+.mobile-indicator-top::after {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px 6px 0 6px;
+    border-color: #FFD600 transparent transparent transparent;
+    /* Yellow Arrow */
+}
+
+/* BOTTOM (Arrow on Top) */
+.mobile-indicator-bottom {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 12px;
+}
+
+.mobile-indicator-bottom::after {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 6px 6px 6px;
+    border-color: transparent transparent #FFD600 transparent;
+}
+
+/* LEFT (Arrow on Right) */
+.mobile-indicator-left {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 12px;
+}
+
+.mobile-indicator-left::after {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px 0 6px 6px;
+    border-color: transparent transparent transparent #FFD600;
+}
+
+/* RIGHT (Arrow on Left) */
+.mobile-indicator-right {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 12px;
+}
+
+.mobile-indicator-right::after {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px 6px 6px 0;
+    border-color: transparent #FFD600 transparent transparent;
+}
+
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px) scale(0.9);
+        /* Default for bottom/top mostly */
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+/* Mobile specific check is handled by JS, but good to enforce hiding on desktop just in case */
+@media (min-width: 769px) {
+    .mobile-indicator {
+        display: none !important;
+    }
+}

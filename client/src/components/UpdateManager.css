@@ -1,0 +1,54 @@
+/* UpdateManager.css */
+
+/* Entry Animation for the Update Card */
+@keyframes cardEnter {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.update-card-enter {
+    animation: cardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Indeterminate Progress Bar Animation */
+@keyframes indeterminateProgress {
+    0% {
+        left: -30%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* Ensure font consistency */
+.update-card-enter h1,
+.update-card-enter h2,
+.update-card-enter h3 {
+    margin: 0;
+}
+
+/* Scrollbar styling for changelog */
+.update-card-enter ul::-webkit-scrollbar {
+    width: 6px;
+}
+
+.update-card-enter ul::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.update-card-enter ul::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.update-card-enter ul::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}

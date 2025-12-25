@@ -1,0 +1,244 @@
+.streak-modal-overlay {
+    z-index: 10000;
+    align-items: flex-end;
+    /* Bottom sheet look */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal Content (Bottom Sheet) */
+.streak-modal-content {
+    background: #111;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 20px 20px 0 0;
+    padding: 30px 20px;
+    position: relative;
+    border-top: 1px solid #333;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.streak-modal-content.slide-up {
+    transform: translateY(0);
+}
+
+/* Header */
+.streak-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.streak-icon-large {
+    font-size: 3rem;
+    color: var(--accent-color, #f5c518);
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 10px rgba(245, 197, 24, 0.4));
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.streak-header h2 {
+    font-size: 1.8rem;
+    margin: 0;
+    color: white;
+}
+
+.streak-header p {
+    color: #888;
+    margin: 5px 0 0;
+    font-size: 0.9rem;
+}
+
+/* Progress Section */
+.streak-progress-section {
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    color: #ccc;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.progress-bar-bg {
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f5c518, #ff9800);
+    border-radius: 4px;
+    transition: width 1s ease-out;
+}
+
+.next-reward-text {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+    text-align: center;
+}
+
+.next-reward-text strong {
+    color: #fff;
+}
+
+/* Timeline */
+.rewards-timeline h3 {
+    font-size: 1rem;
+    color: #888;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.timeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #1a1a1a;
+    border: 1px solid #222;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.timeline-item.unlocked {
+    background: rgba(245, 197, 24, 0.1);
+    border-color: rgba(245, 197, 24, 0.3);
+}
+
+.timeline-item.next {
+    border-color: #444;
+}
+
+.timeline-marker {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 1.2rem;
+}
+
+.timeline-item.unlocked .timeline-marker {
+    background: var(--accent-color, #f5c518);
+    color: #000;
+}
+
+.timeline-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.reward-days {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: bold;
+}
+
+.timeline-item.unlocked .reward-days {
+    color: var(--accent-color, #f5c518);
+}
+
+.reward-label {
+    font-size: 1rem;
+    color: #fff;
+}
+
+.glow-dot {
+    position: absolute;
+    right: 15px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color, #f5c518);
+    box-shadow: 0 0 10px var(--accent-color, #f5c518);
+}
+
+/* Close Button */
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.primary-action-btn {
+    width: 100%;
+    padding: 16px;
+    background: #333;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    margin-top: 30px;
+    cursor: pointer;
+}
+
+/* Mobile Responsiveness */
+@media (min-width: 768px) {
+    .streak-modal-overlay {
+        align-items: center;
+        /* Center on desktop */
+    }
+
+    .streak-modal-content {
+        border-radius: 20px;
+        /* Full rounding on desktop */
+        max-width: 400px;
+    }
+}

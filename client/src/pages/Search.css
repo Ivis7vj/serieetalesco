@@ -1,0 +1,206 @@
+/* Search.css - Premium Search Results */
+
+/* Fade Transition */
+.search-results-container {
+    opacity: 0;
+    animation: fadeInPage 0.2s ease-out forwards;
+}
+
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tier 1: Top Result (Hero) */
+.search-tier-top {
+    width: 100%;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.top-result-card {
+    display: flex;
+    width: 100%;
+    max-width: 900px;
+    background: linear-gradient(90deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    align-items: center;
+}
+
+.top-result-card:hover {
+    transform: scale(1.01);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.top-poster-wrapper {
+    flex: 0 0 200px;
+    /* Fixed width */
+    height: 300px;
+    position: relative;
+}
+
+.top-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.top-info {
+    flex: 1;
+    padding: 20px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.top-label {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: var(--accent-color, #FFD600);
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.top-title {
+    font-family: 'Anton', sans-serif;
+    /* Fallback to standard bold if unavailable */
+    font-size: 2.5rem;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.1;
+}
+
+.top-meta {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.view-btn {
+    align-self: flex-start;
+    padding: 10px 25px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    transition: background 0.2s;
+}
+
+.top-result-card:hover .view-btn {
+    background: var(--accent-color, #FFD600);
+    color: #000;
+    border-color: var(--accent-color, #FFD600);
+}
+
+/* Tier 2 & 3: Sections */
+.search-tier-section {
+    margin-bottom: 40px;
+    padding-left: 20px;
+    /* Safe Edge */
+}
+
+.tier-title {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+    /* Clean header */
+    border-left: 3px solid var(--accent-color, #FFD600);
+    padding-left: 15px;
+}
+
+.tier-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding-bottom: 20px;
+    /* Hide Scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tier-row::-webkit-scrollbar {
+    display: none;
+}
+
+.search-card {
+    flex: 0 0 auto;
+    width: 160px;
+    position: relative;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.search-card:hover {
+    transform: scale(1.05);
+    /* Subtle scale */
+    z-index: 10;
+}
+
+.search-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .top-result-card {
+        flex-direction: column;
+        width: 160px;
+        /* Match standard card width */
+        max-width: 160px;
+        margin: 0 auto;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    .top-poster-wrapper {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 2/3;
+        flex: none;
+        border-radius: 8px;
+        /* Rounded corners */
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .top-info {
+        display: none;
+        /* HIDE ALL TEXT DETAILS */
+    }
+
+    /* Ensure proper spacing for the row below */
+    .search-tier-top {
+        margin-bottom: 20px;
+    }
+}
