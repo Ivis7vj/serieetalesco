@@ -1,0 +1,317 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Main Container with Cinematic Background */
+.login-container {
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)),
+    url('../assets/breaking.jpg') center/cover no-repeat;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Arial', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Vignette Effect */
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Blurred Background Effect */
+.login-container::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  right: -10%;
+  bottom: -10%;
+  background: inherit;
+  filter: blur(8px);
+  z-index: 0;
+}
+
+/* Form Card */
+.login-box {
+  width: 450px;
+  max-width: 90%;
+  padding: 60px 50px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Title */
+.login-title {
+  color: #FFFFFF;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+/* Subtitle/Description Text */
+.login-subtitle {
+  color: #B3B3B3;
+  font-size: 14px;
+  font-weight: 400;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Input Fields */
+.input-field {
+  width: 100%;
+  padding: 18px 16px;
+  background-color: #1b1b1b;
+  border: 1px solid #333333;
+  border-radius: 0;
+  font-size: 15px;
+  font-family: 'Arial', sans-serif;
+  color: #FFFFFF;
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.input-field::placeholder {
+  color: #8C8C8C;
+  font-weight: 400;
+}
+
+.input-field:focus {
+  background-color: #2a2a2a;
+  border-color: #FFCC00;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(255, 204, 0, 0.2);
+}
+
+/* Date Input Specific Styling */
+.input-field[type="date"] {
+  color: #8C8C8C;
+  cursor: pointer;
+}
+
+.input-field[type="date"]:focus,
+.input-field[type="date"]:valid {
+  color: #FFFFFF;
+}
+
+.input-field[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.input-field[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Primary Button */
+.submit-button {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(180deg, #FFCC00 0%, #FFB800 100%);
+  border: none;
+  border-radius: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Arial', sans-serif;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+  margin-top: 8px;
+  letter-spacing: 0.5px;
+}
+
+.submit-button:hover {
+  background: linear-gradient(180deg, #FFD700 0%, #FFC700 100%);
+  box-shadow: 0 6px 20px rgba(255, 204, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 204, 0, 0.4);
+}
+
+/* Text Links */
+.toggle-text {
+  color: #B3B3B3;
+  text-align: center;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.toggle-link {
+  color: #FFFFFF;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.toggle-link:hover {
+  color: #FFCC00;
+  text-decoration: underline;
+}
+
+/* Forgot Password Link */
+.forgot-link {
+  color: #B3B3B3;
+  font-size: 13px;
+  text-align: right;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  margin-top: 8px;
+  margin-bottom: 16px;
+  font-weight: 400;
+  display: block;
+  width: 100%;
+}
+
+.forgot-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+/* Back Link */
+.back-link {
+  color: #B3B3B3;
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+.back-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+/* Error Message */
+.error-message {
+  color: #E50914;
+  font-size: 13px;
+  text-align: left;
+  font-weight: 400;
+  padding: 12px 16px;
+  background-color: rgba(229, 9, 20, 0.1);
+  border-left: 3px solid #E50914;
+  border-radius: 0;
+  margin: -8px 0;
+}
+
+/* Success Message */
+.success-message {
+  color: #46D369;
+  font-size: 13px;
+  text-align: left;
+  font-weight: 400;
+  padding: 12px 16px;
+  background-color: rgba(70, 211, 105, 0.1);
+  border-left: 3px solid #46D369;
+  border-radius: 0;
+  margin-bottom: 8px;
+}
+
+/* Divider */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  margin: 8px 0;
+}
+
+/* Form Group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+/* Input Label */
+.input-label,
+.form-group label {
+  color: #B3B3B3;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-box {
+    width: 100%;
+    padding: 40px 30px;
+    border-radius: 0;
+  }
+
+  .login-title {
+    font-size: 28px;
+  }
+
+  .input-field {
+    padding: 16px 14px;
+    font-size: 14px;
+  }
+
+  .submit-button {
+    padding: 16px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 30px 20px;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+}
+
+/* Loading State */
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Focus Visible for Accessibility */
+.submit-button:focus-visible,
+.toggle-link:focus-visible,
+.forgot-link:focus-visible,
+.back-link:focus-visible {
+  outline: 2px solid #FFCC00;
+  outline-offset: 2px;
+}

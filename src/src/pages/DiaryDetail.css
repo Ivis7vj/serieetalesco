@@ -1,0 +1,327 @@
+.diary-detail-page {
+    height: 100vh;
+    height: 100dvh;
+    background-color: #000;
+    color: #fff;
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Strict no scroll */
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.diary-detail-header {
+    display: flex;
+    align-items: center;
+    padding-bottom: 10px;
+    z-index: 10;
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.6rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.diary-detail-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: flex-start;
+    height: 100%;
+}
+
+/* Horizontal Top Section */
+.detail-top-section {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.detail-poster-section {
+    width: 100px;
+    /* Balanced size */
+    flex-shrink: 0;
+}
+
+.detail-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.detail-meta-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    margin: 0;
+    line-height: 1.1;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.detail-rating {
+    display: flex;
+    gap: 3px;
+}
+
+.detail-date-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Centered Review Section */
+.detail-review-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    padding: 15px 0;
+}
+
+.review-text {
+    font-size: 1.2rem;
+    line-height: 1.4;
+    color: #eee;
+    white-space: pre-wrap;
+    margin: 0;
+    width: 100%;
+}
+
+/* Action Buttons - Centered, Narrow & Tall, Spaced Out */
+.detail-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    /* STRICT NO WRAP */
+    gap: 20px;
+    /* Increased spacing between buttons */
+    padding: 10px;
+    width: 100%;
+}
+
+.action-btn {
+    flex: 0 1 auto;
+    /* Don't force growth, maintain gap */
+    width: 85px;
+    /* Fixed narrower width */
+    height: 50px;
+    /* Taller height */
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    white-space: nowrap;
+}
+
+.action-btn svg {
+    font-size: 1rem;
+}
+
+.action-btn:active {
+    transform: scale(0.92);
+}
+
+.btn-edit {
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+.btn-delete {
+    background: rgba(255, 65, 54, 0.15);
+    color: #FF4136;
+}
+
+.btn-share {
+    background: #FFD600;
+    color: #000;
+}
+
+/* Custom Delete Modal */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.custom-modal-content {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 30px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #FF4136;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.modal-desc {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.modal-btn {
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-cancel-modal {
+    background: #222;
+    color: #fff;
+}
+
+.btn-confirm-delete {
+    background: #FF4136;
+    color: #fff;
+}
+
+/* Centered Date Editor */
+.date-editor-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    gap: 25px;
+}
+
+.date-editor-title {
+    font-weight: 900;
+    color: #FFD600;
+    text-transform: uppercase;
+}
+
+.date-input-styled {
+    background: #000;
+    border: 1px solid #FFD600;
+    color: #fff;
+    padding: 12px 25px;
+    font-size: 1.3rem;
+    border-radius: 50px;
+    font-family: inherit;
+    text-align: center;
+}
+
+.date-editor-close {
+    background: #222;
+    color: #fff;
+    padding: 8px 25px;
+    border-radius: 50px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Edit Mode Utilities */
+.review-editor {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    font-family: inherit;
+    resize: none;
+    height: 120px;
+    text-align: center;
+}
+
+.review-editor:focus {
+    outline: none;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 360px) {
+    .action-btn {
+        padding: 5px 8px;
+        font-size: 0.6rem;
+        min-width: 60px;
+    }
+
+    .detail-poster-section {
+        width: 80px;
+    }
+
+    .detail-title {
+        font-size: 1.1rem;
+    }
+}

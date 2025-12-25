@@ -1,0 +1,172 @@
+.series-details {
+  padding: 20px;
+  background: #000000;
+  color: #FFFFFF;
+  min-height: 100vh;
+}
+
+.series-header {
+  margin-bottom: 40px;
+}
+
+.series-header h1 {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.seasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+.season-card {
+  background: #141414;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.season-poster-container {
+  position: relative;
+  width: 100%;
+  height: 375px;
+}
+
+.season-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-poster-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  color: #FFCC00;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.edit-poster-btn.highlight {
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+  background: rgba(255, 204, 0, 0.2);
+}
+
+.edit-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background: rgba(255, 204, 0, 0.9);
+  color: #000000;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+.edit-hint.incoming {
+  opacity: 1;
+  transform: translateY(0);
+  animation: glowPulse 2s infinite;
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
+  }
+
+  100% {
+    box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+  }
+}
+
+.season-info {
+  padding: 20px;
+}
+
+.season-info h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.complete-btn {
+  background: #FFCC00;
+  color: #000000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 10px 0;
+}
+
+.rating-section {
+  margin-top: 15px;
+}
+
+.stars {
+  display: flex;
+  gap: 5px;
+  margin: 5px 0;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  color: #FFCC00;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.completion-popup {
+  background: #141414;
+  padding: 40px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #FFCC00;
+}
+
+.completion-popup h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 24px;
+  color: #FFCC00;
+}
