@@ -2587,7 +2587,6 @@ const MovieDetails = () => {
                             top: 0,
                             left: 0,
                             width: '100vw', // Explicit Viewport Width
-                            height: '100vh', // Explicit Viewport Height
                             height: '100dvh', // Modern Mobile Height
                             background: 'rgba(0, 0, 0, 0.65)', // Slightly darker
                             backdropFilter: 'blur(12px)', // Stronger blur
