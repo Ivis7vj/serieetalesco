@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "echo 'Static Site - No Build Needed'",
+    "build": "mkdir -p dist && cp index.html dist/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
