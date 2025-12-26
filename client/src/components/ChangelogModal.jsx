@@ -15,44 +15,29 @@ const ChangelogModal = ({ isOpen, onClose }) => {
 
     const changes = [
         {
-            icon: <MdPerson color="#FFD600" size={24} />,
-            title: "Real Profile Pictures",
-            description: "Reviews now show actual user avatars instead of placeholders, fetched on-demand."
-        },
-        {
-            icon: <MdLocalFireDepartment color="#FFD600" size={24} />,
-            title: "Smooth Pull-to-Refresh",
-            description: "Added a high-performance 120FPS refresh gesture to the homepage for instant data reload."
+            icon: <MdLayers color="#FFD600" size={24} />,
+            title: "Smooth Poster Skeletons",
+            description: "Replaced old loading boxes with sleek shimmer skeletons for a consistent premium feel."
         },
         {
             icon: <MdAutoAwesome color="#FFD600" size={24} />,
-            title: "Friend Activity Fix",
-            description: "Resolved issues with friends' activity not fetching. Now shows all recent interactions."
-        },
-        {
-            icon: <MdLayers color="#FFD600" size={24} />,
-            title: "Episode Details UI",
-            description: "Completely redesigned episode view with better hierarchies and immersive layout."
-        },
-        {
-            icon: <MdGroups color="#FFD600" size={24} />,
-            title: "Cast & Crew Redesign",
-            description: "Polished the talent section with circular avatars and smooth horizontal scrolling."
-        },
-        {
-            icon: <MdMessage color="#FFD600" size={24} />,
-            title: "Activity UI Upgrade",
-            description: "Refined the look and feel of activity cards for clearer tracking of your journey."
+            title: "Seamless Season Swaps",
+            description: "Fixed visual glitches when switching between seasons. Transitions are now near-instant."
         },
         {
             icon: <MdSecurity color="#FFD600" size={24} />,
-            title: "Optimized Startup",
-            description: "Improved authentication checks to prevent login flashes. App opens directly to your content."
+            title: "Android 15 Optimized",
+            description: "Updated app internals for full compatibility with Android 15 (SDK 35) and beyond."
         },
         {
             icon: <MdCheckCircle color="#FFD600" size={24} />,
-            title: "Native Look & Feel",
-            description: "Further polished UI transitions and safe-area handling for a premium mobile experience."
+            title: "Stability Overhaul",
+            description: "Resolved critical issues in the project structure, significantly improving app performance."
+        },
+        {
+            icon: <MdLocalFireDepartment color="#FFD600" size={24} />,
+            title: "Reliable Updates",
+            description: "Polished our OTA (Over-The-Air) update logic to ensure you always have the latest features."
         }
     ];
 
