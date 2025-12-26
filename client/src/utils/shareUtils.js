@@ -12,21 +12,29 @@ export const generateShareImage = async (ref, options = {}) => {
     const target = ref.current || ref;
 
     try {
+        // Initial attempt with fonts
         return await toPng(target, {
             pixelRatio: 2,
             backgroundColor: '#000000',
             cacheBust: true,
-            skipFonts: true, // Try to skip fonts to avoid cross-origin CSS rules access
+            skipFonts: false,
             ...options
         });
     } catch (error) {
-        console.warn("Retrying share image generation without some options due to error:", error);
-        // Fallback or retry?
-        // Often this specific error is non-fatal if ignored, but toPng throws.
-        // Let's try to return null or handle it. 
-        // Or maybe just skipFonts is enough?
-        // Let's just wrap it.
-        throw error;
+        console.warn("Retrying share image generation without fonts (CORS/SecurityError):", error);
+        try {
+            // FALLBACK attempt: skip fonts to bypass SecurityError on cross-origin CSS
+            return await toPng(target, {
+                pixelRatio: 1.5,
+                backgroundColor: '#000000',
+                cacheBust: true,
+                skipFonts: true,
+                ...options
+            });
+        } catch (retryError) {
+            console.error("Critical failure in sticker generation:", retryError);
+            throw retryError;
+        }
     }
 };
 

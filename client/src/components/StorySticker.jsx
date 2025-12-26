@@ -9,18 +9,15 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
 
     // Resolve dynamic poster
     const seriesId = movie.seriesId || movie.id;
+    const seasonNumber = movie.seasonNumber || 0;
 
-    // Use global poster resolver ONLY if it's a Series sticker (no season/episode specific info)
-    // For Seasons/Episodes, 'movie.poster_path' is already carefully selected by the caller (handleShare)
-    const useGlobalResolution = !movie.seasonEpisode;
-
-    // Logic: If Series, try global resolve. If Season/Ep (or resolve failed), use passed path.
-    const resolvedGlobal = useGlobalResolution ? getResolvedPosterUrl(seriesId, movie.poster_path, globalPosters, 'w500') : null;
+    // Logic: Try to resolve custom poster (Season -> Series -> Default)
+    const resolvedGlobal = getResolvedPosterUrl(seriesId, movie.poster_path, globalPosters, 'w500', seasonNumber);
 
     const finalPosterPath = resolvedGlobal || movie.poster_path;
 
     const posterUrl = finalPosterPath
-        ? `https://image.tmdb.org/t/p/w500${finalPosterPath}?v=${new Date().getTime()}`
+        ? (finalPosterPath.startsWith('http') ? finalPosterPath : `https://image.tmdb.org/t/p/w500${finalPosterPath}`)
         : defaultPosterSvg;
 
     const pfpUrl = user?.photoURL
@@ -39,34 +36,33 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                 width: '1080px',
                 height: '1920px',
                 background: '#000000',
-                fontFamily: "'Inter', 'Segoe UI', sans-serif",
+                fontFamily: "'Anton', sans-serif", // Standardized to Anton
                 color: '#ffffff',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                padding: '80px 60px',
+                justifyContent: 'center', // This centers the group
+                padding: '100px 60px',
                 boxSizing: 'border-box',
                 position: 'relative'
             }}
         >
-            {/* TOP: Username (PFP Removed as requested) */}
+            {/* TOP: Username */}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                marginBottom: '40px',
-                width: '100%' // Ensure full width for centering
+                marginBottom: '60px',
+                width: '100%'
             }}>
                 <span style={{
-                    fontSize: '42px',
+                    fontSize: '48px', // Slightly larger for prominence
                     fontWeight: 'normal',
                     color: '#FFD600',
-                    letterSpacing: '1px',
+                    letterSpacing: '2.5px', // More condensed IMDb feel
                     textTransform: 'uppercase',
-                    fontFamily: "Impact, 'Anton', sans-serif",
                     textAlign: 'center',
-                    lineHeight: '1.2'
+                    lineHeight: '1'
                 }}>
                     @{username}
                 </span>
@@ -74,21 +70,21 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
 
             {/* POSTER with Branding Overlay */}
             <div style={{
-                width: '750px',
-                height: '1125px',
+                width: '780px', // Slightly wider for better 2/3 ratio feel on large canvas
+                height: '1170px',
                 position: 'relative',
-                borderRadius: '24px',
+                borderRadius: '0px', // Square corners as per IMDb aesthetic
                 overflow: 'hidden',
-                boxShadow: '0 30px 80px rgba(0, 0, 0, 0.6)',
-                marginBottom: '60px',
-                backgroundColor: '#111'
+                boxShadow: '0 40px 100px rgba(0, 0, 0, 0.8)',
+                marginBottom: '70px',
+                backgroundColor: '#111',
+                border: '1px solid #222'
             }}>
                 <img
                     src={posterUrl}
                     alt="Poster"
                     crossOrigin="anonymous"
                     onLoad={() => {
-                        // Signal that poster is loaded
                         if (ref && ref.current) {
                             ref.current.setAttribute('data-poster-loaded', 'true');
                         }
@@ -107,38 +103,23 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                 />
 
 
-                {/* SEASON COMPLETION BADGE */}
+                {/* SEASON COMPLETION BADGE - Positioned relative to bottom of poster metadata area */}
                 {seasonCompleted && movie.seasonEpisode && (
                     <div style={{
                         position: 'absolute',
-                        bottom: '320px',
-                        left: '30px',
-                        background: 'rgba(255, 214, 0, 0.15)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1.5px solid rgba(255, 214, 0, 0.4)',
-                        borderRadius: '20px',
-                        padding: '8px 16px',
+                        bottom: '310px',
+                        left: '40px',
+                        background: 'rgba(255, 214, 0, 0.9)',
+                        color: '#000',
+                        borderRadius: '0px', // Square
+                        padding: '10px 20px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        animation: 'fadeIn 250ms ease-out',
-                        zIndex: 2
+                        gap: '10px',
+                        zIndex: 2,
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
                     }}>
-                        <span style={{
-                            fontSize: '20px',
-                            fontWeight: '700',
-                            color: '#FFD600',
-                            letterSpacing: '0.5px'
-                        }}>
-                            {movie.seasonEpisode}
-                        </span>
-                        <span style={{
-                            fontSize: '20px',
-                            fontWeight: '600',
-                            color: 'rgba(255, 255, 255, 0.9)'
-                        }}>
-                            • Completed
-                        </span>
+                        <span style={{ fontSize: '24px', fontWeight: '900' }}>{movie.seasonEpisode} COMPLETED</span>
                     </div>
                 )}
 
@@ -148,33 +129,31 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    height: '280px',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)',
+                    height: '320px',
+                    background: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, transparent 100%)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-end',
                     alignItems: 'center',
-                    paddingBottom: '40px'
+                    paddingBottom: '45px'
                 }}>
                     <p style={{
-                        fontSize: '18px',
-                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: '22px',
+                        color: 'rgba(255, 255, 255, 0.5)',
                         margin: 0,
-                        marginBottom: '8px', // Slightly tightened
+                        marginBottom: '4px',
                         textTransform: 'lowercase',
-                        letterSpacing: '1.5px',
-                        fontWeight: 'normal',
-                        fontFamily: "Impact, 'Anton', sans-serif"
+                        letterSpacing: '2px',
+                        fontWeight: 'normal'
                     }}>
                         reviewed on
                     </p>
                     <div style={{
-                        fontSize: '56px', // Slightly larger
+                        fontSize: '64px',
                         fontWeight: 'normal',
-                        letterSpacing: '1px',
-                        fontFamily: "Impact, 'Anton', sans-serif", // Prioritize Impact for matching logo
+                        letterSpacing: '5px',
                         textTransform: 'uppercase',
-                        lineHeight: '0.9'
+                        lineHeight: '0.8'
                     }}>
                         <span style={{ color: '#FFD600' }}>S</span>
                         <span style={{ color: '#ffffff' }}>ERIEE</span>
@@ -184,20 +163,15 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
 
             {/* SERIES TITLE (Below Poster) */}
             <div style={{
-                fontSize: '2.8rem',
+                fontSize: '3.2rem',
                 fontWeight: 'normal',
                 textTransform: 'uppercase',
-                fontFamily: "Impact, 'Anton', sans-serif",
-                letterSpacing: '1px',
-                lineHeight: '1.1',
+                letterSpacing: '2px',
+                lineHeight: '1',
                 textAlign: 'center',
-                marginBottom: '24px',
+                marginBottom: '30px',
                 maxWidth: '900px',
-                color: '#ffffff',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
+                color: '#ffffff'
             }}>
                 {movie.name}{movie.seasonEpisode ? ` ${movie.seasonEpisode}` : ''}
             </div>
@@ -205,12 +179,12 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
             {/* RATING ROW */}
             <div style={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '24px'
+                gap: '20px'
             }}>
                 {/* Stars */}
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                     {[1, 2, 3, 4, 5].map((star) => {
                         const isFull = normalizedRating >= star;
                         const isHalf = normalizedRating >= star - 0.5 && normalizedRating < star;
@@ -219,15 +193,13 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                             <div key={star} style={{ position: 'relative' }}>
                                 {isHalf ? (
                                     <MdStarHalf
-                                        size={52}
+                                        size={64}
                                         color="#FFD600"
-                                        style={{ filter: 'drop-shadow(0 0 8px rgba(255, 214, 0, 0.4))' }}
                                     />
                                 ) : (
                                     <MdStar
-                                        size={52}
+                                        size={64}
                                         color={isFull ? '#FFD600' : '#222'}
-                                        style={{ filter: isFull ? 'drop-shadow(0 0 8px rgba(255, 214, 0, 0.4))' : 'none' }}
                                     />
                                 )}
                             </div>
@@ -236,34 +208,34 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                 </div>
                 {/* Text */}
                 <span style={{
-                    fontSize: '28px',
-                    color: '#aaaaaa',
-                    fontWeight: '400',
-                    letterSpacing: '0px',
-                    fontFamily: "'Inter', sans-serif"
+                    fontSize: '24px',
+                    color: '#888',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase'
                 }}>
-                    {username} watched this
+                    {username} WATCHED THIS
                 </span>
             </div>
 
             {/* MANDATORY FOOTER */}
             <div style={{
                 position: 'absolute',
-                bottom: '30px',
-                fontSize: '22px', // Slightly larger
-                fontWeight: 'normal', // Bold
-                color: 'rgba(255,255,255,0.4)',
-                letterSpacing: '2px',
+                bottom: '80px', // Higher from bottom for safe area
+                fontSize: '24px',
+                color: 'rgba(255,255,255,0.2)',
+                letterSpacing: '4px',
                 textTransform: 'uppercase',
-                fontFamily: "Impact, 'Anton', sans-serif", // MATCHING BRAND FONT
                 width: '100%',
                 textAlign: 'center'
             }}>
-                SERIEE • Tracking & Review App
+                SERIEE • TRACKING & REVIEW APP
             </div>
 
             <style>
-                {`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}
+                {`
+                @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                `}
             </style>
         </div>
     );

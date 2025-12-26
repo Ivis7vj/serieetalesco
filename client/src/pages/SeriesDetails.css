@@ -3,6 +3,8 @@
   background: #000000;
   color: #FFFFFF;
   min-height: 100vh;
+  touch-action: pan-y;
+  transform: translateZ(0);
 }
 
 .series-header {

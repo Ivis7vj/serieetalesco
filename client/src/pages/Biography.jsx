@@ -184,7 +184,9 @@ const Biography = () => {
                             overflowX: 'auto',
                             gap: '15px',
                             padding: '0 20px 20px 20px',
-                            WebkitOverflowScrolling: 'touch'
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-x pan-y',
+                            willChange: 'transform'
                         }}>
                             {knownFor.map(show => (
                                 <div

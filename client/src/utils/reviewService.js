@@ -181,6 +181,15 @@ export const getEpisodeReviews = async (tmdbId, seasonNumber, episodeNumber) => 
         const numericSeason = parseInt(seasonNumber);
         const numericEpisode = parseInt(episodeNumber);
 
+        if (isNaN(numericId) || numericId > 2147483647) {
+            return [];
+        }
+
+        if (isNaN(numericId) || numericId > 2147483647) {
+            console.warn(`[ReviewService] Invalid TMDB ID skipped: ${tmdbId}`);
+            return [];
+        }
+
         console.log(`[Supabase] Fetching Episode Reviews: ID=${numericId}, S=${numericSeason}, E=${numericEpisode}`);
 
         // Try Supabase first
@@ -336,6 +345,7 @@ export const getSeasonReviews = async (tmdbId, seasonNumber) => {
 export const getSeriesReviews = async (tmdbId) => {
     try {
         const numericId = parseInt(tmdbId);
+        if (isNaN(numericId) || numericId > 2147483647) return [];
         console.log(`[Supabase] Fetching All Series Reviews: ID=${numericId}`);
 
         // Get from Supabase

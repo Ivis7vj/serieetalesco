@@ -7,6 +7,8 @@ import { db } from '../firebase-config';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { tmdbApi } from '../utils/tmdbApi';
 import * as reviewService from '../utils/reviewService';
+import PremiumLoader from '../components/PremiumLoader';
+import InlinePageLoader from '../components/InlinePageLoader';
 
 // Sticker Logic
 
@@ -17,17 +19,23 @@ import { getResolvedPosterUrl } from '../utils/globalPosterResolver';
 import { useScrollLock } from '../hooks/useScrollLock';
 import './Home.css';
 
+const reviewCache = {}; // Simple in-memory cache
+
 const UserReview = () => {
     const navigate = useNavigate();
-    const { currentUser, userData, globalPosters } = useAuth();
-    const [reviews, setReviews] = useState([]);
+    const { currentUser, userData, globalPosters } = useAuth(); // userData is still used in handleShare
+
+    // Initial State from Cache if available
+    const [reviews, setReviews] = useState(() => {
+        return (currentUser && reviewCache[currentUser.uid]) || [];
+    });
+
+    const [loading, setLoading] = useState(!currentUser || !reviewCache[currentUser.uid]);
     const [editModal, setEditModal] = useState({ isOpen: false, review: null });
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, reviewId: null, tmdbId: null, isSeries: false });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, reviewId: null }); // Removed tmdbId, isSeries as per diff
 
     // Global Scroll Lock
     useScrollLock(editModal.isOpen || deleteModal.isOpen);
-
-
 
     // Metadata Cache for missing posters/titles
     const [missingDetails, setMissingDetails] = useState({});
@@ -39,9 +47,11 @@ const UserReview = () => {
     const handleShare = (reviewItem, isSeries = true) => {
         const dataToPass = {
             movie: {
+                seriesId: reviewItem.tmdbId,
                 name: reviewItem.name,
                 poster_path: reviewItem.poster_path,
-                seasonEpisode: reviewItem.isEpisode ? `S${reviewItem.seasonNumber} E${reviewItem.episodeNumber}` : (reviewItem.isSeason ? `S${reviewItem.seasonNumber}` : null)
+                seasonEpisode: reviewItem.isEpisode ? `S${reviewItem.seasonNumber} E${reviewItem.episodeNumber}` : (reviewItem.isSeason ? `S${reviewItem.seasonNumber}` : null),
+                seasonNumber: reviewItem.seasonNumber || 0
             },
             rating: reviewItem.rating ? parseFloat(reviewItem.rating) * 2 : 0,
             user: {
@@ -54,15 +64,10 @@ const UserReview = () => {
         navigate('/share-sticker', { state: { stickerData: dataToPass } });
     };
 
-    const { startLoading, stopLoading } = useLoading();
-
     useEffect(() => {
         if (!currentUser) return;
         const fetchReviews = async () => {
-            // Only show global loader on FIRST load if empty
-            if (reviews.length === 0) {
-                startLoading("Fetching reviews...");
-            }
+            setLoading(true);
             try {
                 const fetched = await reviewService.getUserReviews(currentUser.uid);
                 setReviews(fetched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
@@ -94,11 +99,11 @@ const UserReview = () => {
             } catch (e) {
                 console.error(e);
             } finally {
-                stopLoading();
+                setLoading(false);
             }
         };
         fetchReviews();
-    }, [currentUser]); // Note: dependency on currentUser only
+    }, [currentUser]);
 
     const refreshReviewsBackground = async () => {
         if (!currentUser) return;
@@ -109,8 +114,6 @@ const UserReview = () => {
     const handleUpdateReview = async (data) => {
         if (!editModal.review) return;
         const reviewId = editModal.review.id;
-
-        startLoading("Updating review...");
 
         try {
             const reviewRef = doc(db, 'reviews', reviewId);
@@ -129,8 +132,6 @@ const UserReview = () => {
 
         } catch (error) {
             console.error("Error updating review:", error);
-        } finally {
-            stopLoading();
         }
     };
 
@@ -157,7 +158,6 @@ const UserReview = () => {
     };
 
     const performDelete = async (review) => {
-        startLoading("Deleting review...");
         const id = review.id;
         try {
             // Delete based on source or try both
@@ -180,15 +180,11 @@ const UserReview = () => {
             await refreshReviewsBackground();
         } catch (err) {
             console.error("Error deleting review:", err);
-        } finally {
-            stopLoading();
         }
     };
 
     const confirmSeriesDelete = async () => {
         if (!deleteModal.reviewId) return;
-
-        startLoading("Deleting series review...");
 
         try {
             // 1. Delete based on source
@@ -225,10 +221,31 @@ const UserReview = () => {
 
         } catch (err) {
             console.error("Error deleting full review:", err);
-        } finally {
-            stopLoading();
         }
     };
+
+    if (loading && reviews.length === 0) {
+        return (
+            <div className="section" style={{ minHeight: '100vh', background: '#000' }}>
+                <h2 className="section-title">Your Reviews</h2>
+                <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', opacity: 1 }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} style={{ display: 'flex', gap: '15px' }}>
+                            {/* Poster Placeholder */}
+                            <div style={{ width: '60px', height: '90px', background: '#222', borderRadius: '4px', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                            {/* Text Lines */}
+                            <div style={{ flex: 1, paddingTop: '5px' }}>
+                                <div style={{ width: '40%', height: '15px', background: '#222', borderRadius: '4px', marginBottom: '10px', animation: 'skeleton-pulse 1.5s infinite ease-in-out' }}></div>
+                                <div style={{ width: '80%', height: '12px', background: '#222', borderRadius: '4px', marginBottom: '8px', animation: 'skeleton-pulse 1.5s infinite ease-in-out', animationDelay: '0.1s' }}></div>
+                                <div style={{ width: '60%', height: '12px', background: '#222', borderRadius: '4px', animation: 'skeleton-pulse 1.5s infinite ease-in-out', animationDelay: '0.2s' }}></div>
+                            </div>
+                        </div>
+                    ))}
+                    <style>{`@keyframes skeleton-pulse { 0% { opacity: 0.3; } 50% { opacity: 0.6; } 100% { opacity: 0.3; } }`}</style>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="section">
@@ -241,7 +258,7 @@ const UserReview = () => {
             ) : (
                 <div className="reviews-list" style={{ maxWidth: '800px' }}>
                     {Object.values(reviews.reduce((acc, review) => {
-                        const key = review.tmdbId;
+                        const key = review.tmdbId || review.id;
                         if (!acc[key]) {
                             acc[key] = {
                                 ...review,
@@ -421,4 +438,5 @@ const UserReview = () => {
         </div>
     );
 };
+
 export default UserReview;

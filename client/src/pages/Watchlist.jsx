@@ -6,24 +6,40 @@ import { useLoading } from '../context/LoadingContext';
 import { db } from '../firebase-config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import * as watchlistService from '../utils/watchlistService';
+import { getResolvedPosterUrl } from '../utils/globalPosterResolver';
+import Skeleton from '../components/Skeleton';
 import './Home.css';
-import '../pages/Home.css'; // Ensure CSS is loaded
+import '../pages/Home.css';
+
+const WatchlistSkeleton = () => (
+    <div className="section" style={{ padding: '20px', paddingBottom: '80px', minHeight: '100vh' }}>
+        <Skeleton width="200px" height="32px" marginBottom="30px" />
+        <div className="watchlist-grid">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} style={{ aspectRatio: '2/3' }}>
+                    <Skeleton height="100%" borderRadius="8px" />
+                </div>
+            ))}
+        </div>
+    </div>
+);
 
 const Watchlist = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, globalPosters } = useAuth();
     const [watchlist, setWatchlist] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const { stopLoading } = useLoading();
 
     useEffect(() => {
         if (!currentUser) return;
         const fetchWatchlist = async () => {
+            setLoading(true);
             const wl = await watchlistService.getWatchlist(currentUser.uid);
             setWatchlist(wl);
-            stopLoading();
+            setLoading(false);
         };
         fetchWatchlist();
-    }, [currentUser, stopLoading]);
+    }, [currentUser]);
 
     // Profile-style Grouping Logic (Season Baskets)
     const processWatchlist = (list) => {
@@ -42,8 +58,8 @@ const Watchlist = () => {
                         seriesId: seriesId,
                         seasonNumber: item.seasonNumber,
                         name: item.name,
-                        poster_path: item.poster_path,
-                        pluginPoster: item.seasonPoster,
+                        poster_path: item.poster_path, // Base poster
+                        pluginPoster: item.seasonPoster, // Potentially explicit season poster
                         episodes: []
                     };
                 }
@@ -85,7 +101,8 @@ const Watchlist = () => {
             processed.push(basket);
         });
 
-        return processed;
+        // Filter out items without a valid poster path
+        return processed.filter(item => item.poster_path);
     };
 
     const removeFromWatchlist = async (e, id) => {
@@ -103,6 +120,8 @@ const Watchlist = () => {
     };
 
     const items = processWatchlist(watchlist);
+
+    if (loading && watchlist.length === 0) return <WatchlistSkeleton />;
 
     return (
         <div className="section" style={{ padding: '20px', paddingBottom: '80px', minHeight: '100vh', overflowY: 'auto' }}>
@@ -122,7 +141,11 @@ const Watchlist = () => {
                                     onClick={() => navigate(`/watchlist/season/${item.seriesId}/${item.seasonNumber}`)}
                                     style={{ cursor: 'pointer', display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative' }}
                                 >
-                                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                                    <img
+                                        src={getResolvedPosterUrl(item.seriesId || item.id, item.poster_path, globalPosters, 'w500', item.seasonNumber)}
+                                        alt={item.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                    />
                                     {/* Season Indicator for Bucket */}
                                     <div style={{
                                         position: 'absolute', bottom: '10px', right: '10px',
@@ -133,25 +156,42 @@ const Watchlist = () => {
                                     }}>
                                         S{item.seasonNumber}
                                     </div>
+                                    {/* Count Badge */}
                                     <div style={{
                                         position: 'absolute', top: '10px', left: '10px',
-                                        background: 'rgba(0,0,0,0.6)', color: '#fff',
+                                        background: 'rgba(0,0,0,0.7)', color: '#fff',
                                         padding: '2px 6px', borderRadius: '4px',
-                                        fontSize: '0.7rem', backdropFilter: 'blur(4px)'
+                                        fontSize: '0.75rem'
                                     }}>
-                                        {item.episodeCount} EPS
+                                        {item.episodeCount} Eps
                                     </div>
                                 </div>
                             ) : (
-                                <Link to={item.seasonNumber ? `/tv/${item.tmdbId}/season/${item.seasonNumber}` : `/tv/${item.tmdbId}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative' }}>
-                                    <img src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                                    {item.seasonNumber && !item.episodeNumber && (
+                                <Link to={`/tv/${item.tmdbId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative' }}>
+                                    <img
+                                        src={getResolvedPosterUrl(item.tmdbId || item.id, item.poster_path, globalPosters, 'w500', item.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'}
+                                        alt={item.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                    />
+                                    <button
+                                        onClick={(e) => removeFromWatchlist(e, item.id || item.tmdb_id)}
+                                        style={{
+                                            position: 'absolute', top: '10px', right: '10px',
+                                            background: 'rgba(0,0,0,0.6)', color: '#ff4444',
+                                            border: 'none', borderRadius: '50%',
+                                            width: '30px', height: '30px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <MdRemoveCircleOutline size={18} />
+                                    </button>
+                                    {item.isSeason && (
                                         <div style={{
                                             position: 'absolute', bottom: '10px', right: '10px',
-                                            background: '#FFCC00', color: '#000', // Changed to match design request (Season Indicator)
+                                            background: '#FFCC00', color: '#000',
                                             padding: '4px 8px', borderRadius: '4px',
-                                            fontWeight: 'bold', fontSize: '0.8rem',
-                                            zIndex: 2
+                                            fontWeight: 'bold', fontSize: '0.8rem'
                                         }}>
                                             S{item.seasonNumber}
                                         </div>
@@ -162,9 +202,6 @@ const Watchlist = () => {
                     ))}
                 </div>
             )}
-
-            {/* Basket Drawer (Restored & Fixed) */}
-
         </div>
     );
 };

@@ -45,10 +45,8 @@
     z-index: 10;
 }
 
-.trending-moment-card:hover {
-    transform: translateY(-3px) scale(1.01);
-    box-shadow: 0 15px 50px rgba(255, 214, 0, 0.05);
-    /* Very subtle glow */
+.trending-moment-card:active {
+    transform: scale(0.98);
 }
 
 /* Left: Poster Section */
@@ -67,9 +65,7 @@
     transition: transform 0.4s ease;
 }
 
-.trending-moment-card:hover .moment-poster {
-    transform: scale(1.05);
-}
+/* Removed hover scaling */
 
 /* Right: Content Section */
 .moment-content {

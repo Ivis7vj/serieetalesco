@@ -31,24 +31,27 @@
 
 .home-container {
   width: 100%;
-  min-height: 100vh;
-  /* Changed from fixed height */
-  min-height: 100dvh;
-  height: auto;
-  /* Allow growth */
+  height: 100%;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  /* Layout Structure */
   display: flex;
   flex-direction: column;
-  overflow: visible;
-  /* Unlock scroll */
   position: relative;
-  transition: background-color 0.3s;
+  overflow: hidden;
+}
 
-  /* Safe Area Padding */
-  /* Safe Area Padding - ONLY Bottom here */
-  padding-bottom: var(--safe-bottom);
+/* Main Content transitions */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
 }
 
 /* Header Styles */
@@ -115,7 +118,6 @@
   border: none;
 }
 
-.nav-link:hover,
 .nav-link.active {
   color: var(--accent-color);
   font-weight: 700;
@@ -136,9 +138,9 @@
   transition: all 0.2s;
 }
 
-.header-icon-btn:hover {
+.header-icon-btn:active {
   color: var(--accent-color);
-  transform: scale(1.1);
+  transform: scale(0.9);
 }
 
 /* Main Content Transitions */
@@ -281,8 +283,9 @@
   opacity: 1;
 }
 
-.sidebar-link:hover {
+.sidebar-link:active {
   color: var(--accent-color);
+  transform: scale(0.95);
 }
 
 .sidebar-link.active {
@@ -385,8 +388,9 @@
   /* Use var if we want text to flip, but accent usually expects black text on yellow */
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+.btn-primary:active {
+  transform: scale(0.96);
+  opacity: 0.8;
 }
 
 .btn-secondary {
@@ -395,8 +399,9 @@
   /* Fix this if tertiary bg? */
 }
 
-.btn-secondary:hover {
-  background-color: rgba(109, 109, 110, 0.4);
+.btn-secondary:active {
+  transform: scale(0.96);
+  opacity: 0.8;
 }
 
 /* Rows / Sections */
@@ -426,6 +431,9 @@
   flex-flow: row nowrap !important;
   gap: 10px;
   overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  will-change: transform;
   overflow-y: hidden !important;
   padding: 10px 20px 20px 20px;
   scroll-behavior: smooth;

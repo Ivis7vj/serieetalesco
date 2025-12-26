@@ -14,7 +14,6 @@ import * as watchlistService from '../utils/watchlistService';
 
 const ReviewPage = () => {
     // Lock Scroll on this page
-    useScrollLock(true);
     const { type, id } = useParams(); // type: 'series', 'season', 'episode'
     const location = useLocation();
     const navigate = useNavigate();

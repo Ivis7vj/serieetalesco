@@ -6,17 +6,14 @@ import { useEffect, useCallback } from 'react';
  */
 export const useScrollLock = (isLocked) => {
     useEffect(() => {
-        const root = document.querySelector('.app-root');
-        if (!root) return;
-
         if (isLocked) {
-            root.classList.add('no-scroll');
+            document.body.classList.add('lock-scroll');
         } else {
-            root.classList.remove('no-scroll');
+            document.body.classList.remove('lock-scroll');
         }
 
         return () => {
-            root.classList.remove('no-scroll');
+            document.body.classList.remove('lock-scroll');
         };
     }, [isLocked]);
 };

@@ -1,14 +1,30 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { activityService } from '../utils/activityService';
+import ActivityRenderer from '../components/ActivityRenderer';
 import { db } from '../firebase-config';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { MdPerson, MdSearch, MdClose, MdStar } from 'react-icons/md';
-import PremiumLoader from '../components/PremiumLoader';
+import Skeleton from '../components/Skeleton';
 import './Friends.css';
 
-import { activityService } from '../utils/activityService';
-import ActivityRenderer from '../components/ActivityRenderer';
+const FriendsSkeleton = () => (
+    <div className="activity-feed" style={{ padding: '0 20px' }}>
+        {[1, 2, 3].map(i => (
+            <div key={i} style={{ marginBottom: '20px', background: '#111', padding: '15px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <Skeleton width="40px" height="40px" borderRadius="50%" />
+                    <div style={{ flex: 1 }}>
+                        <Skeleton width="120px" height="15px" marginBottom="5px" />
+                        <Skeleton width="80px" height="12px" />
+                    </div>
+                </div>
+                <Skeleton height="150px" borderRadius="8px" />
+            </div>
+        ))}
+    </div>
+);
 
 const Friends = () => {
     const { userData } = useAuth();
@@ -152,7 +168,7 @@ const Friends = () => {
     };
 
     return (
-        <div className="friends-container" style={{ background: '#000', minHeight: '100vh', color: '#fff', paddingBottom: '70px' }}>
+        <div className="friends-container" style={{ background: '#000', minHeight: '100%', transform: 'translateZ(0)', paddingBottom: '100px' }}>
             {/* SEARCH SECTION */}
             <div className="friend-search-container" style={{ padding: '10px 20px', position: 'relative' }}>
                 <form onSubmit={handleSearch} className="search-form" style={{ display: 'flex', gap: '10px' }}>
@@ -190,7 +206,7 @@ const Friends = () => {
             {/* FEED SECTION */}
             <div className="activity-feed" style={{ padding: '0 20px' }}>
                 {loading ? (
-                    <div style={{ height: '300px', position: 'relative' }}><PremiumLoader message="Fetching feed..." /></div>
+                    <FriendsSkeleton />
                 ) : activities.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#FFD600', marginTop: '50px' }}>
                         <p style={{ marginBottom: '10px' }}>No recent activity.</p>

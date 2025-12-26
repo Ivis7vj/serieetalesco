@@ -10,6 +10,7 @@ import '../pages/Home.css';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase-config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { tmdbApi } from '../utils/tmdbApi';
 
 const Header = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -84,10 +85,9 @@ const Header = () => {
 
     useEffect(() => {
         const fetchSuggestions = async () => {
-            if (searchTerm.trim().length > 1) { // Trigger earlier
+            if (searchTerm.trim().length > 1) {
                 try {
-                    const response = await fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}`);
-                    const data = await response.json();
+                    const data = await tmdbApi.searchSeries(searchTerm);
                     if (data.results) {
                         setSuggestions(data.results.slice(0, 5));
                         setShowSuggestions(true);
@@ -103,7 +103,7 @@ const Header = () => {
 
         const timeoutId = setTimeout(fetchSuggestions, 200); // Faster debounce
         return () => clearTimeout(timeoutId);
-    }, [searchTerm, TMDB_API_KEY]);
+    }, [searchTerm]);
 
     const handleSearch = (e) => {
         e.preventDefault();

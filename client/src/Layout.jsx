@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
-import PremiumLoader from './components/PremiumLoader';
 import { useAuth } from './context/AuthContext';
 import { useLoading } from './context/LoadingContext';
 import { useScrollLock } from './hooks/useScrollLock';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './components/PageTransition';
 import './pages/Home.css'; // Reusing Home layout styles for the main container
 
 const Layout = () => {
@@ -33,22 +34,13 @@ const Layout = () => {
 
     return (
         <div className="home-container" style={{
-            position: 'relative',
-            height: '100dvh',
-            width: '100vw',
-            overflow: 'hidden',
-            paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'env(safe-area-inset-bottom)',
-            paddingLeft: 'env(safe-area-inset-left)',
-            paddingRight: 'env(safe-area-inset-right)',
-            backgroundColor: 'var(--bg-primary)'
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--bg-primary)',
+            overflow: 'hidden'
         }}>
-            {isLoading && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, backgroundColor: '#000' }}>
-                    <PremiumLoader message={loadingMessage} />
-                </div>
-            )}
-
             {showBackButton && (
                 <button
                     onClick={() => navigate(-1)}
@@ -77,10 +69,25 @@ const Layout = () => {
             )}
 
             <Header onLogout={handleLogout} />
-            <div className="content-wrapper" style={{ height: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+
+            <div className="content-wrapper" style={{
+                flex: 1,
+                overflow: 'hidden',
+                position: 'relative'
+            }}>
                 <Sidebar activeFooter={activeFooter} setActiveFooter={setActiveFooter} onLogout={handleLogout} />
-                <main className="main-content" style={{ minHeight: '100%' }}>
-                    <Outlet />
+                <main className="main-content" id="app-scroll-container" style={{
+                    position: 'relative', // Constrain absolute transitions
+                    height: '100%',
+                    overflowY: 'auto',
+                    paddingBottom: 'env(safe-area-inset-bottom)',
+                    WebkitOverflowScrolling: 'touch'
+                }}>
+                    <AnimatePresence mode="popLayout" initial={false}>
+                        <PageTransition key={location.pathname}>
+                            <Outlet />
+                        </PageTransition>
+                    </AnimatePresence>
                 </main>
             </div>
         </div>

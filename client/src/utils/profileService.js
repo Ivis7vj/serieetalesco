@@ -64,7 +64,7 @@ export const getUserProfileData = async (userId) => {
             import('../supabase-config').then(({ supabase }) =>
                 supabase
                     .from('user_posters')
-                    .select('series_id, poster_path')
+                    .select('series_id, season_number, poster_path')
                     .eq('user_id', userId)
             ).catch(err => {
                 console.error("Poster fetch failed:", err);
@@ -102,7 +102,10 @@ export const getUserProfileData = async (userId) => {
             ratings: ratings || { episodes: [], seasons: [] },
             activityPreview: activityPreview || [],
             userPosters: (postersResult?.data || []).reduce((acc, row) => {
-                if (row.series_id && row.poster_path) acc[row.series_id] = row.poster_path;
+                if (row.series_id && row.poster_path) {
+                    const key = `${row.series_id}_${row.season_number || 0}`;
+                    acc[key] = row.poster_path;
+                }
                 return acc;
             }, {})
         };

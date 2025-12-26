@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase-config';
-import PremiumLoader from '../components/PremiumLoader';
+import Skeleton from './Skeleton';
 import ActivityRenderer from './ActivityRenderer';
 import ReviewModal from './ReviewModal'; // Import ReviewModal
 import { useNavigate } from 'react-router-dom';
+
+const ActivityFeedSkeleton = () => (
+    <div className="activity-list">
+        {[1, 2, 3].map(i => (
+            <div key={i} style={{ marginBottom: '15px', padding: '10px', background: '#111', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                    <Skeleton width="40px" height="40px" borderRadius="12px" />
+                    <div style={{ flex: 1 }}>
+                        <Skeleton width="60%" height="16px" marginBottom="5px" />
+                        <Skeleton width="40%" height="12px" />
+                    </div>
+                </div>
+                <Skeleton height="100px" borderRadius="8px" />
+            </div>
+        ))}
+    </div>
+);
 
 const ActivityFeed = ({ userId, feed }) => {
     const [activityFeed, setActivityFeed] = useState([]);
@@ -77,7 +94,7 @@ const ActivityFeed = ({ userId, feed }) => {
         navigate(`/tv/${activity.tmdbId}`);
     };
 
-    if (loading) return <div style={{ height: '300px', position: 'relative' }}><PremiumLoader message="Loading activity..." /></div>;
+    if (loading) return <ActivityFeedSkeleton />;
 
     if (activityFeed.length === 0) {
         return <p style={{ color: '#FFD600', textAlign: 'center', marginTop: '20px' }}>No recent activity.</p>;

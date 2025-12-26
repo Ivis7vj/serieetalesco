@@ -4,9 +4,24 @@ import { MdArrowBack, MdIosShare, MdClose } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import StorySticker from '../components/StorySticker';
 import LoadingPopup from '../components/LoadingPopup';
-import PremiumLoader from '../components/PremiumLoader';
+import Skeleton from '../components/Skeleton';
 import { useScrollLock } from '../hooks/useScrollLock';
 import { generateShareImage, sharePoster } from '../utils/shareUtils';
+
+const StickerSkeleton = () => (
+    <div style={{
+        width: '100%',
+        maxWidth: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+    }}>
+        <Skeleton width="100%" borderRadius="16px" height="500px" />
+        <div style={{ marginTop: '30px' }}>
+            <Skeleton width="160px" height="48px" borderRadius="24px" />
+        </div>
+    </div>
+);
 
 const StickerSharePage = () => {
     // Lock Scroll on this page
@@ -144,11 +159,7 @@ const StickerSharePage = () => {
                 position: 'relative',
                 overflow: 'hidden'
             }}>
-                {status === 'preparing' && (
-                    <div style={{ textAlign: 'center', zIndex: 5 }}>
-                        <PremiumLoader message="Designing your poster..." />
-                    </div>
-                )}
+                {status === 'preparing' && <StickerSkeleton />}
 
                 {status === 'ready' && generatedImage && (
                     <div style={{

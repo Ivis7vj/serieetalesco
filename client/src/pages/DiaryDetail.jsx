@@ -3,9 +3,33 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MdArrowBack, MdStar, MdStarHalf, MdEdit, MdDelete, MdShare, MdSave, MdClose, MdCheck } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import * as diaryService from '../utils/diaryService';
-import PremiumLoader from '../components/PremiumLoader';
+import Skeleton from '../components/Skeleton';
 import { useScrollLock } from '../hooks/useScrollLock';
 import './DiaryDetail.css';
+
+const DiaryDetailSkeleton = () => (
+    <div className="diary-detail-page" style={{ minHeight: '100vh', background: '#000' }}>
+        <div className="diary-detail-header" style={{ height: '60px' }}>
+            <Skeleton width="40px" height="40px" borderRadius="50%" />
+        </div>
+        <div className="diary-detail-content" style={{ padding: '20px' }}>
+            <div className="detail-top-section" style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+                <Skeleton width="120px" height="180px" borderRadius="8px" />
+                <div style={{ flex: 1 }}>
+                    <Skeleton width="80%" height="24px" marginBottom="10px" />
+                    <Skeleton width="100px" height="20px" marginBottom="10px" />
+                    <Skeleton width="120px" height="16px" />
+                </div>
+            </div>
+            <Skeleton height="150px" borderRadius="8px" marginBottom="30px" />
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <Skeleton width="80px" height="40px" borderRadius="20px" />
+                <Skeleton width="80px" height="40px" borderRadius="20px" />
+                <Skeleton width="80px" height="40px" borderRadius="20px" />
+            </div>
+        </div>
+    </div>
+);
 
 const DiaryDetail = () => {
     useScrollLock(true); // Freeze page as requested
@@ -111,17 +135,17 @@ const DiaryDetail = () => {
         });
     };
 
-    if (loading) return <div className="diary-detail-page"><PremiumLoader message="Loading entry..." /></div>;
+    if (loading) return <DiaryDetailSkeleton />;
     if (!entry) return null;
 
     const formattedDate = new Date(isEditing ? editData.date : entry.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     return (
-        <div className="diary-detail-page">
+        <div className="diary-detail-page" style={{ minHeight: '100%', background: '#000', transform: 'translateZ(0)', paddingBottom: '100px' }}>
             {/* Custom Delete Modal */}
             {showDeleteConfirm && (
                 <div className="custom-modal-overlay">
-                    <div className="custom-modal-content">
+                    <div className="custom-modal-content animate-pop">
                         <h2 className="modal-title">Delete Entry?</h2>
                         <p className="modal-desc">Are you sure you want to remove this entry from your diary? This action cannot be undone.</p>
                         <div className="modal-actions">
@@ -134,7 +158,7 @@ const DiaryDetail = () => {
 
             {/* Custom Centered Date Editor */}
             {isEditingDate && (
-                <div className="date-editor-container">
+                <div className="date-editor-container animate-slide-up">
                     <h2 className="date-editor-title">Edit Watched Date</h2>
                     <input
                         type="date"
@@ -152,7 +176,7 @@ const DiaryDetail = () => {
                 <button className="back-btn" onClick={() => navigate(-1)}><MdArrowBack /></button>
             </div>
 
-            <div className="diary-detail-content">
+            <div className="diary-detail-content animate-fade-in">
                 <div className="detail-top-section">
                     <div className="detail-poster-section">
                         <img src={`https://image.tmdb.org/t/p/w500${entry.posterPath}`} alt={entry.seriesName} className="detail-poster" />

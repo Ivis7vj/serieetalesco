@@ -196,5 +196,11 @@ export const tmdbApi = {
         const cached = await getFromBackend(`/person/${id}/credits`);
         const data = cached || await fetchDirect(`/person/${id}/combined_credits`);
         return data;
+    },
+
+    // Discover Series (Advanced Search)
+    discoverSeries: async (paramsString) => {
+        // paramsString should include things like &with_genres=...&sort_by=...
+        return await fetchDirect('/discover/tv', paramsString);
     }
 };

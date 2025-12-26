@@ -29,7 +29,7 @@ const BannerActionModal = ({ onClose, onSearch, lastUpdated }) => {
 
     return (
         <div className="modal-overlay banner-action-modal-overlay" onClick={onClose}>
-            <div className="modal-content banner-action-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-content banner-action-modal animate-pop" onClick={e => e.stopPropagation()}>
                 {isLocked ? (
                     <>
                         <div className="action-icon locked">

@@ -7,8 +7,18 @@ import { useNotification } from '../context/NotificationContext';
 import { useScrollLock } from '../hooks/useScrollLock';
 import { tmdbApi } from '../utils/tmdbApi'; // Added import
 import './BannerSelection.css';
-import PremiumLoader from '../components/PremiumLoader';
 import { triggerErrorAutomation } from '../utils/errorAutomation';
+import Skeleton from './Skeleton';
+
+const BackdropSkeleton = () => (
+    <div className="backdrop-list">
+        {[1, 2, 3, 4].map(i => (
+            <div key={i} className="backdrop-item" style={{ aspectRatio: '16/9' }}>
+                <Skeleton height="100%" borderRadius="8px" />
+            </div>
+        ))}
+    </div>
+);
 
 const BannerSelection = ({ series, onClose, onBack, onSelectSeries }) => {
     useScrollLock(true);
@@ -116,7 +126,7 @@ const BannerSelection = ({ series, onClose, onBack, onSelectSeries }) => {
 
             <div className="selection-content">
                 {loading ? (
-                    <div style={{ position: 'relative', height: '300px' }}><PremiumLoader message="Loading backdrops..." /></div>
+                    <BackdropSkeleton />
                 ) : backdrops.length === 0 ? (
                     <div className="no-backdrops-container">
                         <div className="no-results" style={{ marginBottom: '20px' }}>No high-quality backdrops available for this series.</div>

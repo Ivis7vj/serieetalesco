@@ -31,7 +31,7 @@ const ShareModal = ({ isOpen, onClose, imageUrl }) => {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content" style={{
+            <div className="modal-content animate-pop" style={{
                 background: '#1a1a1a',
                 borderRadius: '16px',
                 padding: '24px',

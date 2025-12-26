@@ -16,6 +16,9 @@ import './Home.css';
 import { getResolvedPosterUrl } from '../utils/globalPosterResolver';
 import { useLoading } from '../context/LoadingContext';
 import ButtonLoader from '../components/ButtonLoader';
+import PremiumLoader from '../components/PremiumLoader';
+import InlinePageLoader from '../components/InlinePageLoader';
+import Skeleton from '../components/Skeleton';
 import BannerSearch from '../components/BannerSearch';
 import BannerSelection from '../components/BannerSelection';
 import BannerViewModal from '../components/BannerViewModal';
@@ -290,11 +293,11 @@ const hydrateLikes = async (likesList) => {
     });
 };
 
+
 const Profile = () => {
     const { uid } = useParams(); // Get uid from URL if present
     const navigate = useNavigate();
     const { currentUser, logout, globalPosters } = useAuth();
-    const { setIsLoading, setLoadingMessage } = useLoading();
 
     // Determine Target User (URL param > Current User)
     const targetUid = uid || currentUser?.uid;
@@ -320,9 +323,18 @@ const Profile = () => {
     const [activityItems, setActivityItems] = useState([]);
     const [starSeriesIds, setStarSeriesIds] = useState(new Set());
     const [followLoading, setFollowLoading] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(false);
+
+    // Reviews State
+    const [lastReview, setLastReview] = useState(null);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [hasMoreReviews, setHasMoreReviews] = useState(true);
+
+    const { alert, confirm } = useNotification();
 
     // Profile-specific Posters (Handles \"My View\" vs \"Friend View\")
     const [profilePosters, setProfilePosters] = useState({});
+
 
     // Banner & Diary State
     const [showBannerSearch, setShowBannerSearch] = useState(false);
@@ -332,12 +344,9 @@ const Profile = () => {
     const [showBannerAction, setShowBannerAction] = useState(false);
     const [detailedEntry, setDetailedEntry] = useState(null); // Selected Diary Entry for Overlay
 
+    useScrollLock(editImageSrc || showFullPFP || showBannerSearch || showBannerSelection || detailedEntry);
 
     // Activity Feed State
-    const [userActivityFeed, setUserActivityFeed] = useState([]);
-    const { stopLoading } = useLoading();
-
-    // Fetch User Data (Optimized with ProfileService)
     const loadProfileData = async () => {
         if (!targetUid) return;
 
@@ -370,11 +379,10 @@ const Profile = () => {
 
             // Stats
             const currentYear = new Date().getFullYear();
-            const achievements = userInfo.achievements || [];
             const followedByMe = userInfo.followers?.includes(currentUser?.uid);
 
             setStats({
-                thisYear: achievements.filter(a => a.type === 'season_finish' && new Date(a.date).getFullYear() === currentYear).length,
+                thisYear: diary.filter(item => new Date(item.date).getFullYear() === currentYear).length,
                 following: userInfo.following?.length || 0,
                 followers: userInfo.followers?.length || 0,
                 streak: userInfo.streak?.current || 0
@@ -385,14 +393,14 @@ const Profile = () => {
         // 2. Set SSOT Data
         setWatchlist(wl);
         setWatched(diary); // Diary
-        setUserActivityFeed(activityPreview);
+        setWatchlist(wl);
+        setWatched(diary); // Diary
+        // setUserActivityFeed(activityPreview); // REMOVED: State variable does not exist
 
         // 3. Hydrate Likes
         const hydratedLikes = await hydrateLikes(rawLikes);
         setLikes(hydratedLikes);
 
-        // Signal page ready
-        stopLoading();
         setPageLoading(false);
     };
 
@@ -409,76 +417,113 @@ const Profile = () => {
         };
 
     }, [targetUid, currentUser]);
-    // Removing 'globalPosters' dependency as hydration uses helper or internal logic? 
-    // Wait, profilePosters state logic?
-    // The previous code had specific logic for profilePosters fetching.
-    // I should probably Keep the profilePosters logic separate if services don't handle it.
-    // The instructions said "Replace them with ONE call ... profileService.getUserProfileData".
-    // Does profileService return user posters? No.
-    // So I should keep the existing `profilePosters` useEffect logic found in lines 253-276?
-    // The prompt: "No direct DB queries in Profile.jsx".
-    // line 259: `supabase.from('user_posters')...`
-    // I should move this to profileService or a separate service call? 
-    // Prompt says "REMOVE ALL direct queries to: Supabase".
-    // So I should have included 'user_posters' in profileService.
-    // BUT the prompt didn't list `user_posters` in "Expected return shape". 
-    // "Expected return shape: { userInfo, diary, watchlist, likes, ratings, activityPreview }".
-    // AND "NO new features".
 
-    // I will KEEP the `profilePosters` fetch separate for now (or move to profileService if permissible, but risk breaking expected shape).
-    // Actually, `user_posters` table query IS a Supabase query.
-    // User Instructions: "Replace them with ONE call ... profileService.getUserProfileData(uid)".
-    // If I leave `user_posters` query, I fail "No direct DB queries".
-    // I should Add `userPosters` to `profileService` return? 
-    // Or ignore? If I ignore, Profile Posters break.
-    // I will Add it to `profileService` implementation in a minute? 
-    // Or just leave it as an exception?
-    // "Phase 2.7 goal ... Reduce DB reads".
-    // If I add it to `profileService`, I reduce network calls.
-    // I Will UPDATE `profileService.js` to include `user_posters` fetch.
-    // But first, let's look at the replacement block.
-    // I need to be careful not to delete the `profilePosters` logic if I don't have replacement.
-    // I will leave `profilePosters` logic for a separate tool call to move it to `profileService`? 
-    // Step 2 is: "Replace loadProfile and syncSelfData logic". 
-    // I will replace `loadProfile` and `syncSelfData`.
-    // I will leave `profilePosters` block (lines 253-276) alone for now, because it was separate.
-    // Wait, the block I am replacing spans 252-463. This INCLUDES `profilePosters`.
-    // If I overwrite valid logic with nothing, I break "Profile loads correctly".
-    // I MUST move `user_posters` fetching to `profileService` OR keep the logic.
-    // I will KEEP the logic by including it in the new `useEffect` but wrapped inline? 
-    // No, "Removes duplicated queries".
-    // I WILL UPDATE `profileService.js` to fetch posters too.
-
-    // BUT I cannot update `profileService.js` in this `multi_replace`.
-    // Implementation Plan: "Import and reuse existing services: diary, watchlist, likes, ratings".
-    // Does not mention `userPosters`.
-    // I will assume `userPosters` is minor enough to fetch separately or inline via `supabase-config` import?
-    // But explicit rule: "Remove ALL direct queries to Supabase".
-    // Okay, I will add `user_posters` to `profileService` in a subsequent step (or previous step, but I already wrote it).
-    // I will perform the Profile update assuming I will FIX `profileService` to return posters.
-    // I will update `Profile.jsx` to USE `profilePosters` from service.
-
-    // Wait, line 253-276:
-    /*
-        if (targetUid === currentUser?.uid) {
-            setProfilePosters(globalPosters || {});
-        } else if (targetUid) {
-             // Fetch from Supabase
+    // Live sync "This Year" count with watched state
+    useEffect(() => {
+        if (watched) {
+            const currentYear = new Date().getFullYear();
+            const count = watched.filter(item => new Date(item.date).getFullYear() === currentYear).length;
+            setStats(prev => ({ ...prev, thisYear: count }));
         }
-    */
-    // This logic handles "My View" (Context) vs "Friend View" (DB).
-    // Service handles DB. 
-    // So `getUserProfileData` should return `userPosters` (from DB).
-    // In `Profile.jsx`:
-    // if (targetUid === currentUser) setProfilePosters(globalPosters)
-    // else setProfilePosters(data.userPosters)
+    }, [watched]);
 
-    // Okay. Ready.
+    // Trigger Fetch on Tab Change
+    useEffect(() => {
+        if (activeTab === 'Reviews' && reviews.length === 0 && hasMoreReviews) {
+            fetchReviews(true);
+        }
+    }, [activeTab, targetUid, reviews.length, hasMoreReviews]);
+
+    // STALE-WHILE-REVALIDATE LOGIC
+    // If viewing own profile, use global userData immediately.
+    // If viewing other, show Skeleton structure (not blocking loader).
+
+    // Check if we can show partial data
+    const showSkeleton = pageLoading && !user;
+
+    if (showSkeleton) {
+        // Render Empty Container (Background only) to allow smooth swipe without skeleton distraction
+        return (
+            <div className="profile-container" style={{ padding: '0px', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+                {/* 1. Header/Banner Skeleton */}
+                <div style={{ height: '24vh', minHeight: '180px', width: '100%', position: 'relative', background: '#000' }}>
+                    <Skeleton height="100%" borderRadius="0" />
+                </div>
+
+                <div style={{ padding: '0 20px', marginTop: '-50px', position: 'relative', zIndex: 10 }}>
+                    {/* 2. Avatar & Info Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '20px', alignItems: 'flex-end', marginBottom: '25px' }}>
+                        {/* Avatar */}
+                        <div style={{
+                            border: '3px solid #000',
+                            borderRadius: '50%',
+                            width: '100px',
+                            height: '100px',
+                            background: '#000',
+                            overflow: 'hidden'
+                        }}>
+                            <Skeleton width="100%" height="100%" borderRadius="50%" />
+                        </div>
+
+                        {/* Username & Socials (Right of avatar) */}
+                        <div style={{ paddingBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Skeleton width="70%" height="24px" borderRadius="6px" />
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <Skeleton width="20px" height="20px" borderRadius="50%" />
+                                <Skeleton width="20px" height="20px" borderRadius="50%" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Stats Row (This Year / Followers / Following) */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gap: '10px',
+                        marginBottom: '20px',
+                        justifyItems: 'center',
+                        padding: '10px 0',
+                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: '12px'
+                    }}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                                <Skeleton width="24px" height="18px" />
+                                <Skeleton width="60px" height="10px" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 4. Bio Section */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '30px' }}>
+                        <Skeleton width="60%" height="12px" />
+                        <Skeleton width="40%" height="12px" />
+                    </div>
+
+                    {/* 5. Tabs */}
+                    <div style={{ display: 'flex', gap: '25px', marginBottom: '20px', borderBottom: '1px solid #222', paddingBottom: '12px' }}>
+                        {['Profile', 'Diary', 'Activity'].map((_, i) => (
+                            <Skeleton key={i} width="60px" height="20px" borderRadius="4px" />
+                        ))}
+                    </div>
+
+                    {/* 6. Content Grid (Favorites) */}
+                    <div style={{ marginBottom: '15px' }}>
+                        <Skeleton width="120px" height="16px" style={{ marginBottom: '15px' }} /> {/* "FAVORITE SERIES" Title */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} style={{ aspectRatio: '2/3' }}>
+                                    <Skeleton width="100%" height="100%" borderRadius="8px" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Reviews Pagination Logic
-    const [lastReview, setLastReview] = useState(null);
-    const [loadingReviews, setLoadingReviews] = useState(false);
-    const [hasMoreReviews, setHasMoreReviews] = useState(true);
 
     const fetchReviews = async (isInitial = false) => {
         if (loadingReviews) return;
@@ -515,16 +560,10 @@ const Profile = () => {
     };
 
     // Trigger Fetch on Tab Change
-    useEffect(() => {
-        if (activeTab === 'Reviews' && reviews.length === 0 && hasMoreReviews) {
-            fetchReviews(true);
-        }
-    }, [activeTab, targetUid]);
 
     // Activity Feed Fetch - REMOVED (Moved to ActivityFeed component)
 
 
-    const { alert } = useNotification();
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
@@ -555,12 +594,6 @@ const Profile = () => {
         }
     };
 
-    const [isFollowing, setIsFollowing] = useState(false);
-
-    // Pull to Refresh State
-    const [refreshing, setRefreshing] = useState(false);
-    const [pullStartY, setPullStartY] = useState(0);
-    const [pullProgress, setPullProgress] = useState(0);
 
     const handleBoxClick = (index) => window.dispatchEvent(new CustomEvent('trigger-search-bar', { detail: { slotIndex: index } }));
 
@@ -783,7 +816,6 @@ const Profile = () => {
         }
     };
 
-    useScrollLock(editImageSrc || showFullPFP || showBannerSearch || showBannerSelection || detailedEntry);
 
     // Grouping Logic for Watchlist (Deduplicated)
     const processWatchlist = (list) => {
@@ -883,7 +915,7 @@ const Profile = () => {
 
                                                         return (
                                                             <Link to={fav.seasonNumber ? `/tv/${validTmdbId}/season/${fav.seasonNumber}` : `/tv/${validTmdbId}`} style={{ display: 'block', width: '100%', height: '100%', position: 'relative', overflow: 'visible' }}>
-                                                                <img src={getResolvedPosterUrl(validTmdbId, fav.seasonPoster || fav.poster_path, profilePosters, 'w342') || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} alt={fav.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                <img src={getResolvedPosterUrl(validTmdbId, fav.seasonPoster || fav.poster_path, profilePosters, 'w342', fav.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} alt={fav.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             </Link>
                                                         );
                                                     })()}
@@ -924,7 +956,7 @@ const Profile = () => {
                                                         style={{ cursor: 'pointer' }}
                                                     >
                                                         <img
-                                                            src={getResolvedPosterUrl(item.tmdbId, item.posterPath || item.poster_path, profilePosters, 'w342') || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'}
+                                                            src={getResolvedPosterUrl(item.tmdbId || item.id, item.posterPath || item.poster_path, profilePosters, 'w342', item.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'}
                                                             alt={item.name}
                                                         />
                                                         {/* DATE BADGE ONLY */}
@@ -947,7 +979,7 @@ const Profile = () => {
                     // Uses Single Aggregated Feed
                     return (
                         <div className="activity-feed">
-                            <ActivityFeed userId={targetUid} feed={userActivityFeed} />
+                            <ActivityFeed userId={targetUid} />
                         </div>
                     );
                 case 'Watchlist':
@@ -957,8 +989,8 @@ const Profile = () => {
                             <div className="watchlist-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', padding: '10px' }}>
                                 {likes.filter(i => i.type !== 'like_review').map(item => (
                                     <div key={item.id} style={{ position: 'relative', paddingTop: starSeriesIds.has(item.tmdbId || item.id) ? '0' : '0', paddingLeft: '0' }}>
-                                        <Link to={item.seasonNumber ? `/tv/${item.tmdbId}/season/${item.seasonNumber}` : `/tv/${item.tmdbId}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
-                                            <img src={getResolvedPosterUrl(item.tmdbId, item.seasonPoster || item.poster_path, profilePosters, 'w500') || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                        <Link to={item.seasonNumber ? `/tv/${item.tmdbId || item.id}/season/${item.seasonNumber}` : `/tv/${item.tmdbId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
+                                            <img src={getResolvedPosterUrl(item.tmdbId || item.id, item.seasonPoster || item.poster_path, profilePosters, 'w500', item.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                         </Link>
                                     </div>
                                 ))}
@@ -978,7 +1010,7 @@ const Profile = () => {
                                             onClick={() => navigate(`/watchlist/season/${item.seriesId}/${item.seasonNumber}`)}
                                             style={{ cursor: 'pointer', display: 'block', width: '100%', border: '1px solid var(--border-color)', aspectRatio: '2/3', position: 'relative', overflow: 'hidden' }}
                                         >
-                                            <img src={getResolvedPosterUrl(item.tmdbId, item.poster_path, profilePosters, 'w500') || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                            <img src={getResolvedPosterUrl(item.tmdbId, item.poster_path, profilePosters, 'w500', item.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                             {/* Basket Badges */}
                                             <div className="diary-season-badge" style={{ bottom: '6px', right: '6px', top: 'auto', fontSize: '0.8rem', padding: '4px 6px', position: 'absolute', zIndex: 5, background: 'rgba(0,0,0,0.8)', color: '#fff', borderRadius: '4px', fontWeight: 'bold' }}>S{item.seasonNumber}</div>
                                             <div className="diary-eps-badge" style={{ bottom: '6px', right: '6px', fontSize: '0.75rem' }}>{item.episodeCount} EPS</div>
@@ -987,9 +1019,9 @@ const Profile = () => {
                                 } else {
                                     // Whole Series
                                     return (
-                                        <div key={idx} style={{ position: 'relative', overflow: 'visible', paddingTop: starSeriesIds.has(item.tmdbId) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.tmdbId) ? '20px' : '0' }}>
-                                            <Link to={`/tv/${item.tmdbId}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
-                                                <img src={getResolvedPosterUrl(item.tmdbId, item.poster_path, profilePosters, 'w500') || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                        <div key={idx} style={{ position: 'relative', overflow: 'visible', paddingTop: starSeriesIds.has(item.tmdbId || item.id) ? '20px' : '0', paddingLeft: starSeriesIds.has(item.tmdbId || item.id) ? '20px' : '0' }}>
+                                            <Link to={`/tv/${item.tmdbId || item.id}`} style={{ display: 'block', border: 'none', aspectRatio: '2/3', position: 'relative', overflow: 'visible' }}>
+                                                <img src={getResolvedPosterUrl(item.tmdbId || item.id, item.poster_path, profilePosters, 'w500', item.seasonNumber) || 'https://placehold.co/200x300/141414/FFFF00?text=No+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
                                                 {item.seasonNumber && (
                                                     <div className="diary-season-badge" style={{ bottom: '6px', right: '6px', top: 'auto', fontSize: '0.8rem', padding: '4px 6px', position: 'absolute', zIndex: 5, background: 'rgba(0,0,0,0.8)', color: '#fff', borderRadius: '4px', fontWeight: 'bold' }}>S{item.seasonNumber}</div>
                                                 )}
@@ -1007,16 +1039,18 @@ const Profile = () => {
         return <div key={activeTab} className="slide-content-anim">{content}</div>;
     };
 
+    /*
     if (pageLoading && !user) {
         return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
                 <ButtonLoader size="40px" color="var(--accent-color)" />
             </div>
         );
     }
+    */
 
     return (
-        <div style={{ paddingBottom: '80px', minHeight: '100vh', background: '#000' }}>
+        <div style={{ minHeight: '100%', background: '#000', transform: 'translateZ(0)' }}>
             {/* Banner Section */}
             <div
                 className="profile-banner-container"
@@ -1080,44 +1114,7 @@ const Profile = () => {
             <div
                 className="profile-wrapper"
                 style={{ width: '90%', margin: '0 auto', maxWidth: '1200px', padding: '2rem 0', color: 'var(--text-primary)', position: 'relative', zIndex: 10 }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
             >
-                {(refreshing || pullProgress > 0) && (
-                    <div style={{
-                        position: 'fixed',
-                        top: `calc(var(--safe-top) + ${70 + (pullProgress * 40)}px)`,
-                        left: '50%',
-                        transform: `translateX(-50%)`,
-                        zIndex: 9999,
-                        background: 'rgba(26,26,26,0.95)',
-                        padding: '12px',
-                        borderRadius: '50%',
-                        backdropFilter: 'blur(8px)',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                        border: '1px solid #333',
-                        opacity: refreshing ? 1 : pullProgress,
-                        transition: pullProgress > 0 ? 'none' : 'all 0.3s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <div
-                            className={refreshing ? "loading-circle" : ""}
-                            style={{
-                                width: '24px',
-                                height: '24px',
-                                border: '3px solid #333',
-                                borderTop: '3px solid #FFCC00',
-                                borderRadius: '50%',
-                                animation: refreshing ? 'spin 0.8s linear infinite' : 'none',
-                                transform: refreshing ? 'none' : `rotate(${pullProgress * 360}deg)`
-                            }}
-                        />
-                        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                    </div>
-                )}
 
                 <style>
                     {`
@@ -1157,7 +1154,7 @@ const Profile = () => {
                 .stats-label { font-size: 0.75rem; font-weight: bold; color: #FFFFFF; letter-spacing: 1px; white-space: nowrap; margin-top: 2px; }
                 .profile-bio { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.4; max-width: 500px; white-space: pre-wrap; }
 
-                .nav-scroll-container { display: flex; overflow-x: auto; white-space: nowrap; scrollbar-width: none; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); margin-bottom: 2rem; margin-top: 1rem; width: 100%; -webkit-overflow-scrolling: touch; }
+                .nav-scroll-container { display: flex; overflow-x: auto; white-space: nowrap; scrollbar-width: none; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); margin-bottom: 2rem; margin-top: 1rem; width: 100%; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; will-change: transform; }
                 .nav-scroll-container::-webkit-scrollbar { display: none; }
                 .nav-tab-btn { padding: 15px 25px; font-size: 1rem; background: transparent; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
 
@@ -1325,7 +1322,7 @@ const Profile = () => {
                     .activity-poster-wrapper { width: 80px; }
                     .activity-title { font-size: 1rem; }
 
-                    .favorites-grid { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 20px; scroll-interval: 150px; }
+                    .favorites-grid { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 20px; scroll-interval: 150px; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; will-change: transform; }
                     .favorite-box { width: 110px; }
                     .pfp-full-img-container { width: 70vw !important; height: 70vw !important; max-width: 300px !important; max-height: 300px !important; }
 
@@ -1353,6 +1350,9 @@ const Profile = () => {
                 </style>
 
                 {editImageSrc && <ImageCropper imageSrc={editImageSrc} onCancel={() => setEditImageSrc(null)} onSave={handleSaveCropped} />}
+
+                {/* Scroll Lock moved to top level hook */}
+
                 {showFullPFP && profilePhoto && (
                     <div className="pfp-full-modal" onClick={() => setShowFullPFP(false)}>
                         <div className="pfp-full-img-container" onClick={e => e.stopPropagation()}>
@@ -1367,8 +1367,31 @@ const Profile = () => {
                 <div className="profile-header-grid" style={{ minHeight: isCollapsed ? '0px' : 'auto' }}>
                     <div className={`collapsible-header-content ${isCollapsed ? 'collapsed' : ''}`}>
                         <div className="profile-avatar-area">
-                            <div onClick={() => setShowFullPFP(true)} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent-color)', background: 'var(--bg-tertiary)', cursor: 'pointer' }}>
-                                {profilePhoto ? <img src={profilePhoto} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#555' }}>{(user?.username || 'U')[0].toUpperCase()}</div>}
+                            <div
+                                onTouchStart={(e) => {
+                                    e.preventDefault(); // Prevent ghost clicks
+                                    window.pfpTimer = setTimeout(() => {
+                                        if (navigator.vibrate) navigator.vibrate(50); // Haptic
+                                        setShowFullPFP(true);
+                                    }, 600); // 600ms long press
+                                }}
+                                onTouchEnd={() => {
+                                    if (window.pfpTimer) clearTimeout(window.pfpTimer);
+                                }}
+                                onMouseDown={() => {
+                                    window.pfpTimer = setTimeout(() => {
+                                        setShowFullPFP(true);
+                                    }, 600);
+                                }}
+                                onMouseUp={() => {
+                                    if (window.pfpTimer) clearTimeout(window.pfpTimer);
+                                }}
+                                onMouseLeave={() => {
+                                    if (window.pfpTimer) clearTimeout(window.pfpTimer);
+                                }}
+                                style={{ width: '100%', aspectRatio: '1/1', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent-color)', background: 'var(--bg-tertiary)', cursor: 'pointer', WebkitUserSelect: 'none', userSelect: 'none' }}
+                            >
+                                {profilePhoto ? <img src={profilePhoto} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#555' }}>{(user?.username || 'U')[0].toUpperCase()}</div>}
                             </div>
                             <div className="social-icons">
                                 {user?.instaLink && <a href={user?.instaLink} target="_blank" rel="noopener noreferrer" className="social-icon-link"><FaInstagram /></a>}
@@ -1429,7 +1452,7 @@ const Profile = () => {
 
                 <div className="nav-scroll-container hide-scrollbar">
                     {['Profile', 'Diary', 'Activity', 'Watchlist', 'Liked'].map(tab => (
-                        <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'Activity') { setHasNewActivity(false); if (userActivityFeed[0]) localStorage.setItem(`lastSeenActivity_${currentUser.uid}`, userActivityFeed[0]?.createdAt); } }} className="nav-tab-btn" style={{ position: 'relative', color: activeTab === tab ? '#FFFFFF' : 'var(--text-muted)', fontWeight: activeTab === tab ? 'bold' : 'normal', borderBottom: activeTab === tab ? '3px solid var(--accent-color)' : '3px solid transparent' }}>
+                        <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'Activity') { setHasNewActivity(false); } }} className="nav-tab-btn" style={{ position: 'relative', color: activeTab === tab ? '#FFFFFF' : 'var(--text-muted)', fontWeight: activeTab === tab ? 'bold' : 'normal', borderBottom: activeTab === tab ? '3px solid var(--accent-color)' : '3px solid transparent' }}>
                             {tab}
                             {tab === 'Diary' && <MobileIndicator id="diary-tab-tip" message="Your itemized tracking history" position="bottom" />}
                             {tab === 'Activity' && hasNewActivity && <div style={{ position: 'absolute', top: '10px', right: '10px', width: '8px', height: '8px', background: '#FF4136', borderRadius: '50%' }}></div>}
@@ -1437,12 +1460,12 @@ const Profile = () => {
                     ))}
                 </div>
 
-                <main style={{ minHeight: '400px' }}>{renderTabContent()}</main>
+                <main style={{ minHeight: '400px', paddingBottom: '100px' }}>{renderTabContent()}</main>
             </div>
 
             {/* Modals */}
             {editImageSrc && <ImageCropper imageSrc={editImageSrc} onCancel={() => setEditImageSrc(null)} onSave={handleSaveCropped} />}
-            {showFullPFP && <div className="full-pfp-modal" onClick={() => setShowFullPFP(false)}><img src={profilePhoto} alt="Full PFP" /></div>}
+            {/* Removed duplicate showFullPFP modal from here */}
 
             {/* Banner Modals */}
             {showBannerSearch && (

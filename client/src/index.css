@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
-
 /* Global Scrollbar Hiding */
 ::-webkit-scrollbar {
   display: none;
@@ -23,6 +21,11 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Premium Animations */
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-buttery: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .light-mode {
@@ -50,28 +53,18 @@
   /* Firefox */
 }
 
-html {
-  scroll-behavior: smooth;
-  height: -webkit-fill-available;
-  /* iOS Fallback */
-}
-
+html,
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  /* STRICT ROOT SCROLL ARCHITECTURE */
+  height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100vh;
   overflow: hidden;
-  /* DISABLE BODY SCROLL */
-  position: fixed;
-  /* Prevent bouncy overscroll on body */
-  inset: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, sans-serif;
 
   /* Native App Feel */
   user-select: none !important;
@@ -79,39 +72,70 @@ body {
   -webkit-touch-callout: none !important;
   -webkit-user-drag: none !important;
   -webkit-tap-highlight-color: transparent;
-
-  /* Strict No-Scroll on Body */
   overscroll-behavior: none;
-  touch-action: none;
-  /* Defer all touch to .app-root */
+  /* Prevent browser bounce */
+  scroll-behavior: smooth;
 }
 
-/* THE SINGLE SCROLLABLE CONTAINER */
+/* THE STRICT FIXED ROOT - PREVENTS ANY BODY/BROWSER BOUNCE */
 .app-root {
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   height: 100dvh;
+  /* Dynamic viewport height */
   width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+}
+
+/* GLOBAL BUTTON STANDARDS (RULE: 44px min-height + active scale) */
+button,
+.view-btn,
+.friend-search-btn,
+.search-btn,
+.action-btn,
+.popup-btn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s var(--transition-bounce), opacity 0.2s var(--transition-smooth);
+  cursor: pointer;
+  will-change: transform;
+}
+
+button:active,
+.view-btn:active,
+.friend-search-btn:active,
+.search-btn:active,
+.action-btn:active,
+.popup-btn:active {
+  transform: scale(0.92);
+  opacity: 0.8;
+}
+
+/* Page scrolling must happen ONLY inside the designated scroller */
+.main-content,
+#app-scroll-container {
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  /* Momentum Scroll */
+  overscroll-behavior-y: none;
   scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
-  /* Prevent Pull-to-Refresh or Bleed */
-  position: relative;
-  will-change: scroll-position;
-  touch-action: pan-y;
-  /* Allow vertical scroll */
-
-  /* Scrollbar Hiding */
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
+  will-change: transform;
 }
 
-.app-root::-webkit-scrollbar {
-  display: none;
+/* Scrollbar Hiding Global */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* SCROLL LOCK UTILITY (For Popups) */
@@ -131,6 +155,13 @@ input,
 textarea {
   user-select: text !important;
   -webkit-user-select: text !important;
+}
+
+/* LOCK SCROLL UTILITY */
+body.lock-scroll {
+  overflow: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: contain !important;
 }
 
 /* Modal Overlay Styles - Fixed to Viewport */
@@ -188,4 +219,59 @@ textarea {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* GLOBAL ENTRANCE ANIMATIONS */
+.animate-slide-up {
+  animation: slideUp 0.6s var(--transition-buttery) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s var(--transition-smooth) forwards;
+}
+
+.animate-pop {
+  animation: popIn 0.5s var(--transition-bounce) forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Page Transition Wrapper */
+.page-transition-wrapper {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }

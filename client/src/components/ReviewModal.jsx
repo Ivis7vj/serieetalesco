@@ -30,8 +30,9 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, movieName, initialRating = 5, 
         setPrevIsOpen(false);
     }
 
+    useScrollLock(isOpen);
+
     if (!isOpen) return null;
-    // ... (rest of component)
 
     const handleStarClick = (star) => {
         // Toggle half star: if clicking the current full star, make it half.
@@ -72,7 +73,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, movieName, initialRating = 5, 
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content" style={{
+            <div className="modal-content animate-pop" style={{
                 background: '#191919', // Prime Dark
                 padding: '30px',
                 borderRadius: '8px',
@@ -94,7 +95,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, movieName, initialRating = 5, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
                     {posterPath && (
                         <img
-                            src={`https://image.tmdb.org/t/p/w92${posterPath}`}
+                            src={posterPath?.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w92${posterPath}`}
                             alt={movieName}
                             style={{ width: '60px', height: '90px', objectFit: 'cover', borderRadius: '4px', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
                         />

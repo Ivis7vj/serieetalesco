@@ -4,7 +4,7 @@ import { fetchAndActivate, getString } from "firebase/remote-config";
 import { remoteConfig } from "../firebase-config";
 
 // THIS APP'S VERSION (Hardcoded because it's baked into the APK)
-export const APP_VERSION = '3.0.0';
+export const APP_VERSION = '3.0.1';
 
 // Key to store in localStorage to track if update was seen
 export const STORAGE_KEY_VERSION = 'app_version_code';
@@ -31,9 +31,9 @@ export const getDownloadUrl = async () => {
     if (!remoteConfig) return "https://your-default-download-link.com";
     try {
         const url = getString(remoteConfig, "download_url");
-        return url || "https://drive.google.com/file/d/1cJJzfHYa8ZHn9v6k-2JnPATP7URYI4gY/view?usp=drive_link";
+        return url || "https://drive.google.com/file/d/1mpSmcXNp_kcNXSD3s-Kln5-WkKUy4Pns/view?usp=drive_link";
     } catch (error) {
-        return "https://drive.google.com/file/d/1cJJzfHYa8ZHn9v6k-2JnPATP7URYI4gY/view?usp=drive_link";
+        return "https://drive.google.com/file/d/1mpSmcXNp_kcNXSD3s-Kln5-WkKUy4Pns/view?usp=drive_link";
     }
 };
 

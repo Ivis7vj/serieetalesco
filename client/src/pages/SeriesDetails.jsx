@@ -215,13 +215,13 @@ const SeriesDetails = () => {
   };
 
   const getSeasonPoster = (season) => {
-    return getResolvedPosterUrl(id, season.poster_path, globalPosters, 'w500') || 'https://via.placeholder.com/300x450/141414/FFFF00?text=No+Image';
+    return getResolvedPosterUrl(id, season.poster_path, globalPosters, 'w500', season.season_number) || 'https://via.placeholder.com/300x450/141414/FFFF00?text=No+Image';
   };
 
-  if (!series) return <div className="loading">Loading...</div>;
+  if (!series) return null; // Let global loader handle this or use minimal full-height div
 
   return (
-    <div className="series-details">
+    <div className="series-details" style={{ minHeight: '100%', transform: 'translateZ(0)', paddingBottom: '100px' }}>
       {/* Review Modal */}
       <ReviewModal
         isOpen={isReviewModalOpen}
@@ -229,7 +229,10 @@ const SeriesDetails = () => {
         onSubmit={handleLogDiarySubmit}
         movieName={`${series.name} - Season ${selectedSeasonForReview}`}
         modalTitle="Log to Diary"
-        posterPath={seasons.find(s => s.season_number === selectedSeasonForReview)?.poster_path || series.poster_path}
+        posterPath={(() => {
+          const target = seasons.find(s => s.season_number === selectedSeasonForReview);
+          return getResolvedPosterUrl(id, target?.poster_path || series.poster_path, globalPosters, 'w154', selectedSeasonForReview || 0);
+        })()}
       />
 
       {/* Completion Popup */}

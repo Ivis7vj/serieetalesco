@@ -98,7 +98,12 @@ const ReportProblemSheet = ({ isOpen, onClose }) => {
 
         // 2. Rate Limiting Check
         const today = new Date().toDateString();
-        const reports = JSON.parse(localStorage.getItem('seriee_reports') || '{}');
+        let reports = {};
+        try {
+            reports = JSON.parse(localStorage.getItem('seriee_reports') || '{}');
+        } catch (e) {
+            reports = {};
+        }
         const count = reports[today] || 0;
 
         if (count >= 3) {

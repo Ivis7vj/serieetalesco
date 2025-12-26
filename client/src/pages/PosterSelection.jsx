@@ -9,8 +9,10 @@ import { logActivity } from '../utils/activityLogger';
 import { getPosterUnlockStatus } from '../utils/posterUnlockLogic';
 import * as watchedService from '../utils/watchedService';
 
+import { tmdbApi } from '../utils/tmdbApi'; // Import tmdbApi
+
 const PosterSelection = () => {
-    const { id, seasonNumber } = useParams(); // seasonNumber still in URL for navigation context
+    const { id, seasonNumber } = useParams();
     const navigate = useNavigate();
     const { currentUser, userData } = useAuth();
 
@@ -20,9 +22,7 @@ const PosterSelection = () => {
     const [seriesName, setSeriesName] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false); // Success Popup State
-
-    const TMDB_API_KEY = '05587a49bd4890a9630d6c0e544e0f6f';
+    const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -31,23 +31,16 @@ const PosterSelection = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Series Info & Images
-            // Fetch series details to count total seasons
-            const seriesRes = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`);
-            const seriesData = await seriesRes.json();
+            // 1. Fetch Series Info & Images via tmdbApi (Optimized: Single Request)
+            const seriesData = await tmdbApi.getSeriesDetails(id);
             setSeriesName(seriesData.name);
 
-            // Filter out Specials (Season 0) and unreleased if needed, but number_of_seasons is usually the metric.
-            // Prompt: "Do NOT count unreleased seasons". 'number_of_seasons' comes from TMDB.
-            // A clearer way: filter seasons array.
+            // Filter out Specials (Season 0) and unreleased
             const releasedSeasons = (seriesData.seasons || []).filter(s => s.season_number > 0 && s.air_date && new Date(s.air_date) <= new Date());
             const totalSeasons = releasedSeasons.length || seriesData.number_of_seasons || 1;
 
-            // Fetch ALL Series Posters
-            const imagesRes = await fetch(`https://api.themoviedb.org/3/tv/${id}/images?api_key=${TMDB_API_KEY}`);
-            const imagesData = await imagesRes.json();
-            const allPosters = imagesData.posters || [];
-
+            // Extract Posters from the same response
+            const allPosters = seriesData.images?.posters || [];
             setPosters(allPosters);
 
             // 2. Calculate Unlock Status
@@ -118,6 +111,7 @@ const PosterSelection = () => {
                 .upsert({
                     user_id: currentUser.uid,
                     series_id: Number(id),
+                    season_number: Number(seasonNumber) || 0,
                     poster_path: posterPath,
                     updated_at: new Date().toISOString()
                 });

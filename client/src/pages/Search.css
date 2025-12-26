@@ -41,9 +41,8 @@
     align-items: center;
 }
 
-.top-result-card:hover {
-    transform: scale(1.01);
-    border-color: rgba(255, 255, 255, 0.3);
+.top-result-card:active {
+    transform: scale(0.98);
 }
 
 .top-poster-wrapper {
@@ -108,11 +107,7 @@
     transition: background 0.2s;
 }
 
-.top-result-card:hover .view-btn {
-    background: var(--accent-color, #FFD600);
-    color: #000;
-    border-color: var(--accent-color, #FFD600);
-}
+/* Removed hover styles for native feel */
 
 /* Tier 2 & 3: Sections */
 .search-tier-section {
@@ -137,8 +132,13 @@
 .tier-row {
     display: flex;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    will-change: transform;
     gap: 15px;
-    padding-bottom: 20px;
+    padding: 0 20px 100px 0;
+    /* Clear mobile bottom nav */
+    /* Increased bottom padding for full visibility */
     /* Hide Scrollbar */
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -156,9 +156,8 @@
     cursor: pointer;
 }
 
-.search-card:hover {
-    transform: scale(1.05);
-    /* Subtle scale */
+.search-card:active {
+    transform: scale(0.96);
     z-index: 10;
 }
 

@@ -31,7 +31,7 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-container">
-      <div className="login-box">
+      <div className="login-box animate-pop">
         {message && <p className="success-message">{message}</p>}
 
         {view === 'signup' && (

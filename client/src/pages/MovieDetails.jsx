@@ -10,6 +10,7 @@ import { useScrollLock } from '../hooks/useScrollLock';
 import MobileIndicator from '../components/MobileIndicator';
 import { useLoading } from '../context/LoadingContext';
 import ButtonLoader from '../components/ButtonLoader';
+import Skeleton from '../components/Skeleton';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { getWatchedEpisodes, markEpisodeWatched, unmarkEpisodeWatched, markSeasonWatched } from '../utils/watchedService';
@@ -27,6 +28,32 @@ import { likesService } from '../utils/likesService';
 import { tmdbApi } from '../utils/tmdbApi';
 import gsap from 'gsap';
 import './Home.css';
+
+const MovieDetailsSkeleton = () => (
+    <div className="movie-details-container" style={{ background: '#000', minHeight: '100dvh', paddingBottom: '110px' }}>
+        <div className="details-content" style={{ marginTop: '2vh', width: '100%', maxWidth: '600px', margin: '0 auto', padding: '0 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '80%', height: '100px', marginBottom: '2rem' }}>
+                <Skeleton height="80px" borderRadius="12px" />
+            </div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <Skeleton width="180px" height="270px" borderRadius="12px" />
+            </div>
+            <div style={{ width: '100%', height: '40px', marginBottom: '20px' }}>
+                <Skeleton height="30px" width="60%" />
+            </div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginBottom: '30px' }}>
+                <Skeleton width="60px" height="60px" borderRadius="50%" />
+                <Skeleton width="60px" height="60px" borderRadius="50%" />
+                <Skeleton width="60px" height="60px" borderRadius="50%" />
+            </div>
+            <div style={{ width: '100%', gap: '15px', display: 'flex', flexDirection: 'column' }}>
+                <Skeleton height="100px" borderRadius="8px" />
+                <Skeleton height="100px" borderRadius="8px" />
+                <Skeleton height="100px" borderRadius="8px" />
+            </div>
+        </div>
+    </div>
+);
 
 const MovieDetails = () => {
     const { id, seasonNumber } = useParams();
@@ -121,6 +148,7 @@ const MovieDetails = () => {
     const [showPosterUnlockPopup, setShowPosterUnlockPopup] = useState(false);
     const [posterUnlockData, setPosterUnlockData] = useState(null);
     const [posterUrl, setPosterUrl] = useState(null); // Added missing state
+    const [posterLoading, setPosterLoading] = useState(false);
 
     // Poster Edit & Scroll State
     const posterContainerRef = useRef(null);
@@ -149,11 +177,6 @@ const MovieDetails = () => {
         setShowPosterUnlockPopup(false);
         // Trigger Auto-Scroll flow
         triggerAutoScroll();
-    };
-
-    const handleSeasonCompletionClose = () => {
-        setShowSeasonCompletion(false);
-        triggerAutoScroll(); // Reuse the same logic
     };
 
     const triggerAutoScroll = () => {
@@ -202,22 +225,20 @@ const MovieDetails = () => {
     // Episode Tracking
     const [episodeWatchedIDs, setEpisodeWatchedIDs] = useState(new Set()); // Use Set for efficient lookup
     const [episodeWatchlistIDs, setEpisodeWatchlistIDs] = useState([]);
-    const [showSeasonCompletion, setShowSeasonCompletion] = useState(false);
-    const [completedSeasonInfo, setCompletedSeasonInfo] = useState(null);
     const [isSeasonOpen, setIsSeasonOpen] = useState(false);
 
     // Global Scroll Lock for inline popups
-    useScrollLock(showSeasonCompletion || limitPopupVisible);
+    useScrollLock(showPosterUnlockPopup || limitPopupVisible);
 
     // AUTO-CLOSE SEASON COMPLETION AFTER 3 SECONDS
     useEffect(() => {
-        if (showSeasonCompletion) {
+        if (showPosterUnlockPopup) {
             const timer = setTimeout(() => {
-                handleSeasonCompletionClose();
+                handlePopupClose();
             }, 3000);
             return () => clearTimeout(timer);
         }
-    }, [showSeasonCompletion]);
+    }, [showPosterUnlockPopup]);
 
     // Fetch Watched Status from Supabase (SSOT)
     useEffect(() => {
@@ -263,7 +284,8 @@ const MovieDetails = () => {
             const isCompleted = totalEpisodes > 0 && completedCount === totalEpisodes;
 
             // 2. Check Global Poster
-            const resolvedPoster = globalPosters?.[details.id] || null;
+            const currentSeasonPath = seasonDetails?.poster_path || details.poster_path;
+            const resolvedPoster = getResolvedPosterUrl(details.id, currentSeasonPath, globalPosters, 'w500', selectedSeason);
 
             // 3. Trigger Popup if newly completed
             if (isCompleted && !prevCompletedRef.current) {
@@ -324,11 +346,11 @@ const MovieDetails = () => {
             // Trailer implementation removed for stability
 
             setLoading(false);
-            stopLoading();
+            // stopLoading();
         } catch (err) {
             console.error("Failed to fetch episodes", err);
             setLoading(false);
-            stopLoading();
+            // stopLoading();
         }
     }, [details?.name]);
 
@@ -383,11 +405,41 @@ const MovieDetails = () => {
     // START INSERT FOR POSTER SYNC
     // INITIAL POSTER RESOLVE
     useEffect(() => {
-        if (details?.poster_path) {
-            const resolved = resolvePoster(details.id, details.poster_path, globalPosters);
-            setPosterUrl(resolved);
+        if (details?.id) {
+            setPosterLoading(true);
+
+            // If we are looking for a specific season, wait until seasonDetails matches that season
+            const isSeasonView = selectedSeason > 0;
+            const hasCorrectSeasonDetails = seasonDetails?.season_number === Number(selectedSeason);
+
+            if (isSeasonView && !hasCorrectSeasonDetails && !posterUrl) {
+                return;
+            }
+
+            const currentPath = (isSeasonView && hasCorrectSeasonDetails)
+                ? seasonDetails.poster_path
+                : details.poster_path;
+
+            const useFallback = !isSeasonView;
+            const resolved = getResolvedPosterUrl(details.id, currentPath, globalPosters, 'w500', selectedSeason || 0, useFallback);
+
+            if (resolved) {
+                const img = new Image();
+                img.src = resolved;
+                img.onload = () => {
+                    setPosterUrl(resolved);
+                    setPosterLoading(false);
+                };
+                img.onerror = () => {
+                    setPosterUrl(resolved);
+                    setPosterLoading(false);
+                };
+            } else {
+                setPosterUrl(null);
+                setPosterLoading(false);
+            }
         }
-    }, [details, globalPosters]); // Re-run if globalPosters changes
+    }, [details, globalPosters, selectedSeason, seasonDetails]); // Re-run if globalPosters, selectedSeason or seasonDetails changes
 
     // LISTENER FOR IMMEDIATE POSTER UPDATE (From Popup)
     useEffect(() => {
@@ -465,7 +517,7 @@ const MovieDetails = () => {
                 }));
 
                 // Show unlock popup (New Design)
-                setShowSeasonCompletion(true);
+                setShowPosterUnlockPopup(true);
                 // We can still set this for data if needed, but new popup is static text
                 setPosterUnlockData({
                     seriesId: details.id,
@@ -487,24 +539,16 @@ const MovieDetails = () => {
         // Resolve Poster Path & Season Info
         let seasonEpisodeText = null;
 
-        const targetSeasonNum = Number(reviewItem.seasonNumber || (isSeason ? seasonNumber : null));
+        const targetSeasonNum = Number(reviewItem.seasonNumber || (isSeason ? selectedSeason : null));
 
-        // Use Global Resolution Utility - resolvePoster now comes from globalPosterResolver
-        let posterPathToUse = resolvePoster(details.id, details.poster_path, globalPosters);
+        // Use Global Resolution Utility - restored fallback is default true
+        let posterPathToUse = resolvePoster(details.id, details.poster_path, globalPosters, targetSeasonNum || 0);
 
         const foundSeason = targetSeasonNum ? seasonsValues.find(s => s.season_number === targetSeasonNum) : null;
 
-        // Fallback Logic if resolvePoster returned default but we have a season-specific TMDB poster
+        // If we are still using the series-level TMDB default, see if there's a better season-specific TMDB art
         if (posterPathToUse === details.poster_path && foundSeason && foundSeason.poster_path) {
             posterPathToUse = foundSeason.poster_path;
-        }
-
-        // Try to use Season Poster if available (more specific)
-        if (foundSeason && foundSeason.poster_path) {
-            posterPathToUse = foundSeason.poster_path;
-        } else if (isSeason && seasonDetails?.poster_path) {
-            // Fallback to seasonDetails if it matches
-            posterPathToUse = seasonDetails.poster_path;
         }
 
         // Set Label Text
@@ -516,9 +560,11 @@ const MovieDetails = () => {
 
         const stickerDataToPass = {
             movie: {
+                id: id,
                 name: details.name,
                 poster_path: posterPathToUse,
-                seasonEpisode: seasonEpisodeText
+                seasonEpisode: seasonEpisodeText,
+                seasonNumber: reviewItem.seasonNumber || 0
             },
             rating: reviewItem?.rating ? (parseFloat(reviewItem.rating) <= 5 ? parseFloat(reviewItem.rating) * 2 : parseFloat(reviewItem.rating)) : 0,
             user: {
@@ -551,7 +597,7 @@ const MovieDetails = () => {
 
     // Reviews Fetch (Dual-Read: Supabase → Firebase Fallback)
     useEffect(() => {
-        if (!id) return;
+        if (!id || parseInt(id) > 2147483647) return;
 
         const fetchReviews = async () => {
             const reviews = await reviewService.getSeriesReviews(parseInt(id));
@@ -596,8 +642,12 @@ const MovieDetails = () => {
 
     useEffect(() => {
         const fetchSeriesData = async () => {
-            if (!id) return;
-            setIsLoading(true);
+            if (!id || parseInt(id) > 2147483647) {
+                console.warn("Skipping Series Fetch (Invalid ID):", id);
+                setLoading(false);
+                return;
+            }
+            // setIsLoading(true);
             setLoading(true);
             try {
                 // Phase 3: Use Backend Cache Service (Aggregated Data)
@@ -626,7 +676,7 @@ const MovieDetails = () => {
             } catch (error) {
                 console.error("Series Data Fetch Error:", error);
                 setLoading(false);
-                stopLoading();
+                // stopLoading();
             }
         };
 
@@ -644,7 +694,7 @@ const MovieDetails = () => {
                 fetchSeasonEpisodes(id, seasonToFetch, details.name);
             } else {
                 setLoading(false);
-                stopLoading();
+                // stopLoading();
             }
         };
 
@@ -672,6 +722,8 @@ const MovieDetails = () => {
 
     const handleSeasonChange = (newSeason) => {
         setIsSeasonPopupOpen(false);
+        setPosterLoading(true);
+        setPosterUrl(null); // Clear old poster to force skeleton
         navigate(`/tv/${id}/season/${newSeason}`);
     };
 
@@ -711,25 +763,10 @@ const MovieDetails = () => {
                 // I need to be careful. The User Request said "Series / Season / Episode".
                 // Does the UI distinguish?
                 // The Heart button in header usually means Series.
-                // But the code I'm replacing was explicitly constructing a SEASON item.
-                // "isSeason: true, seasonNumber: selectedSeason".
-
-                // If I change this to Series only, I change behavior.
-                // However, usually the main heart is Series. The code I saw looked like Season.
+                // But the code I saw looked like Season.
                 // BUT `toggleLike` triggers `handlePosterDoubleTap` on the POSTER.
                 // If I am on Season page, maybe it likes the Season?
-                // The prompt says: "likesService.likeSeries(), likeSeason(), likeEpisode()".
-                // I should probably check which one to use.
-                // If `seasonNumber` is present, maybe it's Season Like?
-                // But typically users 'Like' a Show.
-                // Let's look at `toggleLike` context again. 
-                // It used `userData.likes` ... `isSeason && seasonNumber === selectedSeason`.
-                // So it was DEFINITELY liking the SEASON inside this component.
-
-                // Okay, if the component logic was liking the SEASON, I should use `likesService.likeSeason`.
-                // BUT, looking at `MovieDetails` ... it seems to handle Season selection.
-                // If I like S1, do I like the Series?
-                // The Prompt says: "User liked X -> Supabase likes table ... Item (series / season / episode)".
+                // The prompt says: "User liked X -> Supabase likes table ... Item (series / season / episode)".
 
                 // I will maintain existing behavior: If `selectedSeason` is set, we are liking the SEASON.
                 // Wait, if I am on the main movie page (`/tv/:id`), `seasonNumber` might be undefined or 1.
@@ -1791,13 +1828,14 @@ const MovieDetails = () => {
             }
      
         } catch (error) {
+```
             triggerErrorAutomation(error);
         }
     };
     */
 
-    if (loading) return null; // STRICT: Wait for ALL data (Series + Season)
-    if (!details) return <div className="loading" style={{ color: '#FFD600', textAlign: 'center', marginTop: '100px' }}>Series not found</div>;
+    if (loading || !details) return <MovieDetailsSkeleton />;
+    if (!details && !loading) return <div className="loading" style={{ color: '#FFD600', textAlign: 'center', marginTop: '100px' }}>Series not found</div>;
 
 
     const date = details.first_air_date;
@@ -1846,7 +1884,7 @@ const MovieDetails = () => {
 
 
     return (
-        <div className="movie-details-container" style={{ background: '#000', minHeight: '100vh' }}>
+        <div className="movie-details-container" style={{ background: '#000', minHeight: '100%', transform: 'translateZ(0)', paddingBottom: '110px' }}>
 
             <div className="details-content" style={{
                 marginTop: '1vh', // SHRUNK (User Req: Reduce top space)
@@ -1888,7 +1926,7 @@ const MovieDetails = () => {
                                     width: 'auto',
                                     maxWidth: '80%', // Shrunk width
                                     height: 'auto',
-                                    maxHeight: '120px', // Strict height limit
+                                    maxHeight: '120px', // Strict limit
                                     objectFit: 'contain',
                                     filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.1))'
                                 }}
@@ -1897,7 +1935,7 @@ const MovieDetails = () => {
                             // Fallback if no logo
                             <h2 style={{
                                 fontSize: '2rem', // SHRUNK (Medium Large)
-                                fontFamily: 'Impact, sans-serif',
+                                fontFamily: 'Anton, Impact, sans-serif',
                                 textTransform: 'uppercase',
                                 color: '#ddd',
                                 textAlign: 'center',
@@ -1930,21 +1968,29 @@ const MovieDetails = () => {
 
                         {/* POSTER CONTAINER REF */}
                         <div ref={posterContainerRef} style={{ position: 'relative', display: 'inline-block' }}>
-                            <img
-                                src={posterUrl && !posterUrl.startsWith('http') ? `https://image.tmdb.org/t/p/w500${posterUrl}` : posterUrl}
-                                alt={title}
-                                className="movie-poster"
-                                style={{
-                                    width: 'auto',
-                                    maxWidth: '90vw',
-                                    height: '30vh', // SHRUNK MORE (30vh)
-                                    maxHeight: '300px', // Strict limit
-                                    objectFit: 'cover',
-                                    borderRadius: '6px', // Tighter radius
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                                    border: 'none',
-                                }}
-                            />
+                            {posterLoading || !posterUrl ? (
+                                <Skeleton
+                                    width="200px"
+                                    height="300px"
+                                    borderRadius="8px"
+                                />
+                            ) : (
+                                <img
+                                    src={posterUrl && !posterUrl.startsWith('http') ? `https://image.tmdb.org/t/p/w500${posterUrl}` : posterUrl}
+                                    alt={title}
+                                    className="movie-poster"
+                                    style={{
+                                        width: 'auto',
+                                        maxWidth: '90vw',
+                                        height: '30vh',
+                                        maxHeight: '300px',
+                                        objectFit: 'cover',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                    }}
+                                />
+                            )}
 
                             {/* EDIT POSTER BUTTON - Only show if season is fully watched */}
                             {isWatched && (
@@ -2142,7 +2188,7 @@ const MovieDetails = () => {
                                 seasonNumber: isSeason ? Number(selectedSeason) : null,
                                 episodeNumber: null,
                                 name: isSeason ? `${details.name} Season ${selectedSeason}` : details.name,
-                                poster_path: isSeason ? (seasonDetails?.poster_path || details.poster_path) : details.poster_path,
+                                poster_path: getResolvedPosterUrl(details.id, isSeason ? (seasonDetails?.poster_path || details.poster_path) : details.poster_path, globalPosters, 'w500', isSeason ? Number(selectedSeason) : 0),
                                 existingReview: existing,
                                 totalEpisodes: isSeason ? episodes.length : 0 // Pass for auto-watched logic
                             }
@@ -2306,6 +2352,8 @@ const MovieDetails = () => {
                                                 border: '1px solid #333',
                                                 borderRadius: '6px',
                                                 overflowY: 'auto',
+                                                WebkitOverflowScrolling: 'touch',
+                                                touchAction: 'pan-y',
                                                 boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
                                                 zIndex: 1001
                                             }}
@@ -2526,7 +2574,15 @@ const MovieDetails = () => {
                     return (
                         <div style={{ marginTop: '3rem', marginBottom: '2rem' }}>
                             <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#FFCC00' }}>Related Series</h3>
-                            <div style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '10px' }} className="hide-scrollbar">
+                            <div style={{
+                                display: 'flex',
+                                overflowX: 'auto',
+                                gap: '15px',
+                                paddingBottom: '10px',
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-x pan-y',
+                                willChange: 'transform'
+                            }} className="hide-scrollbar">
                                 {related.map(series => (
                                     <div
                                         key={series.id}
@@ -2537,7 +2593,7 @@ const MovieDetails = () => {
                                         style={{ flex: '0 0 auto', width: '140px', cursor: 'pointer' }}
                                     >
                                         <img
-                                            src={getResolvedPosterUrl(series.id, series.poster_path, globalPosters, 'w300')}
+                                            src={getResolvedPosterUrl(series.id, series.poster_path, globalPosters, 'w342')}
                                             alt={series.name}
                                             style={{ width: '100%', borderRadius: '6px', height: '210px', objectFit: 'cover', transition: 'transform 0.2s' }}
                                             onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
@@ -2564,7 +2620,10 @@ const MovieDetails = () => {
                     paddingBottom: '20px',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch'
+                    WebkitOverflowScrolling: 'touch',
+                    touchAction: 'pan-x pan-y',
+                    scrollSnapType: 'x proximity',
+                    willChange: 'transform'
                 }}>
                     <style>{`
                         .cast-carousel-container::-webkit-scrollbar { display: none; }
@@ -2670,7 +2729,7 @@ const MovieDetails = () => {
             {/* SEASON COMPLETION OVERLAY */}
             {/* SEASON COMPLETION OVERLAY (Portal to Body for Viewport Positioning) */}
             {
-                showSeasonCompletion && createPortal(
+                showPosterUnlockPopup && createPortal(
                     <div
                         className="season-complete-overlay"
                         style={{
@@ -2678,7 +2737,6 @@ const MovieDetails = () => {
                             top: 0,
                             left: 0,
                             width: '100vw', // Explicit Viewport Width
-                            height: '100vh', // Explicit Viewport Height
                             height: '100dvh', // Modern Mobile Height
                             background: 'rgba(0, 0, 0, 0.65)', // Slightly darker
                             backdropFilter: 'blur(12px)', // Stronger blur
@@ -2744,16 +2802,16 @@ const MovieDetails = () => {
                     document.body
                 )
             }
-
             {/* Daily Limit Popup */}
             {
-                limitPopupVisible && (
+                limitPopupVisible && createPortal(
                     <div
-                        className="modal-overlay"
+                        className="modal-overlay animate-fade-in"
                         onClick={() => setLimitPopupVisible(false)}
+                        style={{ zIndex: 10001 }}
                     >
                         <div
-                            className="modal-content"
+                            className="modal-content animate-pop"
                             onClick={(e) => e.stopPropagation()}
                             style={{
                                 background: '#000000',
@@ -2790,7 +2848,8 @@ const MovieDetails = () => {
                                 OK
                             </button>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
 

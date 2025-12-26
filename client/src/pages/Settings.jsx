@@ -131,6 +131,8 @@ const Settings = () => {
                         SERIEE does not host, stream, or distribute any movies, TV shows, or games.
                         All information and images are provided by third-party metadata services.
                         SERIEE is intended for tracking, rating, and discovery purposes only.
+                        <br /><br />
+                        This product uses the TMDB API but is not endorsed or certified by TMDB.
                     </p>
                 </div>
             </div>

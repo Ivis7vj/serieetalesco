@@ -135,14 +135,17 @@ export function AuthProvider({ children }) {
                 // Initial fetch
                 const { data, error } = await supabase
                     .from('user_posters')
-                    .select('series_id, poster_path')
+                    .select('series_id, season_number, poster_path')
                     .eq('user_id', currentUser.uid);
 
                 if (!error && data) {
                     const map = {};
                     data.forEach(row => {
                         if (row.series_id && row.poster_path) {
-                            map[row.series_id] = row.poster_path;
+                            // Composite key to support season-level overrides
+                            // Default season is 0 (series level)
+                            const key = `${row.series_id}_${row.season_number || 0}`;
+                            map[key] = row.poster_path;
                         }
                     });
                     setGlobalPosters(map);
