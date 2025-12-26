@@ -79,9 +79,9 @@ const Home = () => {
     fetchData();
 
     const lastSeenVersion = localStorage.getItem('last_seen_version');
-    if (lastSeenVersion !== '3.0.1') {
+    if (lastSeenVersion !== '3.0.2') {
       setIsChangelogOpen(true);
-      localStorage.setItem('last_seen_version', '3.0.1');
+      localStorage.setItem('last_seen_version', '3.0.2');
     }
   }, [currentUser]);
 
