@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { MdStar, MdStarHalf } from 'react-icons/md';
 import { getResolvedPosterUrl } from '../utils/globalPosterResolver';
 
-const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalPosters = {} }, ref) => {
+const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, isEpisodes, globalPosters = {} }, ref) => {
     // Inline SVG placeholders (no external network calls needed)
     const defaultPosterSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="750"%3E%3Crect width="500" height="750" fill="%23333"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="24" fill="%23fff"%3ENo Image%3C/text%3E%3C/svg%3E';
     const defaultPfpSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Ccircle cx="75" cy="75" r="75" fill="%23666"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="%23fff"%3EU%3C/text%3E%3C/svg%3E';
@@ -12,16 +12,16 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
     const seasonNumber = movie.seasonNumber || 0;
 
     // Logic: Try to resolve custom poster (Season -> Series -> Default)
-    const resolvedGlobal = getResolvedPosterUrl(seriesId, movie.poster_path, globalPosters, 'w500', seasonNumber);
+    // We pass isEpisodes-specific considerations if needed in future
+    const resolvedUrl = getResolvedPosterUrl(seriesId, movie.poster_path, globalPosters, 'w500', seasonNumber);
 
-    const finalPosterPath = resolvedGlobal || movie.poster_path;
-
-    const posterUrl = finalPosterPath
-        ? (finalPosterPath.startsWith('http') ? finalPosterPath : `https://image.tmdb.org/t/p/w500${finalPosterPath}`)
+    // Fallback and Cache Buster for CORS reliability
+    const posterUrl = resolvedUrl
+        ? `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}v=${new Date().getTime()}`
         : defaultPosterSvg;
 
     const pfpUrl = user?.photoURL
-        ? `${user.photoURL}?v=${new Date().getTime()}`
+        ? `${user.photoURL}${user.photoURL.includes('?') ? '&' : '?'}v=${new Date().getTime()}`
         : defaultPfpSvg;
     const username = user?.username || 'User';
 
@@ -103,8 +103,8 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                 />
 
 
-                {/* SEASON COMPLETION BADGE - Positioned relative to bottom of poster metadata area */}
-                {seasonCompleted && movie.seasonEpisode && (
+                {/* SEASON/EPISODE BADGE */}
+                {(seasonCompleted || isEpisodes) && movie.seasonEpisode && (
                     <div style={{
                         position: 'absolute',
                         bottom: '310px',
@@ -119,7 +119,9 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                         zIndex: 2,
                         boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
                     }}>
-                        <span style={{ fontSize: '24px', fontWeight: '900' }}>{movie.seasonEpisode} COMPLETED</span>
+                        <span style={{ fontSize: '24px', fontWeight: '900' }}>
+                            {movie.seasonEpisode} {isEpisodes ? 'REVIEWED' : 'COMPLETED'}
+                        </span>
                     </div>
                 )}
 
@@ -213,7 +215,7 @@ const StorySticker = forwardRef(({ movie, rating, user, seasonCompleted, globalP
                     letterSpacing: '1px',
                     textTransform: 'uppercase'
                 }}>
-                    {username} WATCHED THIS
+                    {username} WATCHED THIS {isEpisodes ? 'EPISODE' : (seasonCompleted ? 'SEASON' : '')}
                 </span>
             </div>
 

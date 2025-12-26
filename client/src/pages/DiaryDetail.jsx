@@ -97,16 +97,18 @@ const DiaryDetail = () => {
         const stickerData = {
             movie: {
                 id: entry.tmdbId,
+                seriesId: entry.tmdbId,
                 name: entry.seriesName,
                 poster_path: entry.posterPath,
-                seasonEpisode: `Season ${entry.seasonNumber}`
+                seasonEpisode: entry.seasonNumber > 0 ? `Season ${entry.seasonNumber}` : '',
+                seasonNumber: entry.seasonNumber || 0
             },
             rating: entry.rating,
             user: {
                 username: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User',
                 photoURL: currentUser?.photoURL
             },
-            seasonCompleted: true,
+            seasonCompleted: entry.seasonNumber > 0,
             isEpisodes: false
         };
         navigate('/share-sticker', { state: { stickerData } });

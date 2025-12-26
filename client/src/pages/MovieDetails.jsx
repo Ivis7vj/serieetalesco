@@ -560,11 +560,12 @@ const MovieDetails = () => {
 
         const stickerDataToPass = {
             movie: {
-                id: id,
+                id: details.id,
+                seriesId: details.id,
                 name: details.name,
                 poster_path: posterPathToUse,
                 seasonEpisode: seasonEpisodeText,
-                seasonNumber: reviewItem.seasonNumber || 0
+                seasonNumber: targetSeasonNum || 0
             },
             rating: reviewItem?.rating ? (parseFloat(reviewItem.rating) <= 5 ? parseFloat(reviewItem.rating) * 2 : parseFloat(reviewItem.rating)) : 0,
             user: {
