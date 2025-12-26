@@ -31,9 +31,9 @@ export const getDownloadUrl = async () => {
     if (!remoteConfig) return "https://your-default-download-link.com";
     try {
         const url = getString(remoteConfig, "download_url");
-        return url || "https://drive.google.com/file/d/1mpSmcXNp_kcNXSD3s-Kln5-WkKUy4Pns/view?usp=drive_link";
+        return url || "https://drive.google.com/file/d/17C_pNk0k36mlOwSXA2u7auWmK5OuyxvS/view?usp=sharing";
     } catch (error) {
-        return "https://drive.google.com/file/d/1mpSmcXNp_kcNXSD3s-Kln5-WkKUy4Pns/view?usp=drive_link";
+        return "https://drive.google.com/file/d/17C_pNk0k36mlOwSXA2u7auWmK5OuyxvS/view?usp=sharing";
     }
 };
 
