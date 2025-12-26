@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download SERIEE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --accent: #FFD700;
+            --text: #ffffff;
+            --text-muted: #888888;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+            display: flex;
+            position: relative;
+        }
+
+        .logo-text {
+            font-family: 'Anton', sans-serif;
+            /* Fallback for Bebas/Custom font */
+            font-size: 5rem;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+
+        .s-highlight {
+            color: var(--accent);
+        }
+
+        .hero-section {
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        p {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .download-btn {
+            background-color: var(--accent);
+            color: #000;
+            font-weight: 900;
+            font-size: 1.2rem;
+            padding: 20px 40px;
+            border-radius: 16px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .download-btn:active {
+            transform: scale(0.95);
+        }
+
+        .download-icon {
+            font-size: 1.5rem;
+        }
+
+        .version-tag {
+            margin-top: 20px;
+            font-family: monospace;
+            color: #444;
+            font-size: 0.9rem;
+        }
+
+        .instruction-card {
+            background: #111;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 50px;
+            text-align: left;
+            border: 1px solid #222;
+        }
+
+        .instruction-card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .instruction-card li {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            margin-left: 20px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="logo-container">
+        <div class="logo-text"><span class="s-highlight">S</span>ERIEE</div>
+    </div>
+
+    <div class="hero-section">
+        <h2>The First Rule of SERIEE is You must speak about SERIEE</h2>
+        <p>You are downloading the latest version of SERIEE. <br>Experience the new native performance.</p>
+
+        <!-- USER: REPLACE THE HREF BELOW WITH YOUR ACTUAL APK LINK -->
+        <a href="https://drive.google.com/file/d/1DZpc6a3Sox3JGxNX3zsfD5RM5_Yzy-45/view?usp=sharing"
+            class="download-btn">
+            <span class="download-icon">⬇</span>
+            Download App
+        </a>
+
+        <div class="version-tag">Latest Version: v3.0.2</div>
+
+        <div class="instruction-card">
+            <h3>How to Install</h3>
+            <ul>
+                <li>Download the file above.</li>
+                <li>Tap "Open" when finished.</li>
+                <li>If prompted, allow installation from this source.</li>
+                <li>Tap "Update" to keep your data safe.</li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+
+</html>
