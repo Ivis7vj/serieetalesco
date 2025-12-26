@@ -107,7 +107,7 @@ const ChangelogModal = ({ isOpen, onClose }) => {
                         }}>
                             <div>
                                 <h2 style={{ color: '#fff', fontSize: '1.6rem', fontWeight: '900', margin: 0, letterSpacing: '-0.5px' }}>
-                                    What's New in <span style={{ color: '#FFD600' }}>v3.0.0</span>
+                                    What's New in <span style={{ color: '#FFD600' }}>v3.0.1</span>
                                 </h2>
                                 <p style={{ color: '#888', fontSize: '0.9rem', margin: '6px 0 0' }}>The Evolution of SERIEE</p>
                             </div>
