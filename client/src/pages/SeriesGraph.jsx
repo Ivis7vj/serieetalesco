@@ -315,78 +315,140 @@ const SeriesGraph = () => {
                     position: 'fixed',
                     left: '-9999px',
                     top: 0,
-                    visibility: 'visible', // Must be visible for html2canvas
+                    visibility: 'visible',
                     pointerEvents: 'none'
                 }}>
                     <div className="graph-export-wrapper" style={{ width: '1080px', height: '1920px', background: '#000' }}>
-                        <div className="instagram-post-canvas" ref={graphRef} style={{ width: '100%', height: '100%' }}>
-                            <div className="poster-inner-payload">
-                                <div className="poster-grid-axis">
-                                    <div className="poster-col-vessel">
-                                        <div className="user-info-stack">
-                                            <span className="reviewed-by-label" style={{ fontFamily: "'Anton', sans-serif" }}>reviewed by</span>
-                                            <span className="handle-highlight" style={{ fontFamily: "'Anton', sans-serif" }}>@{userData?.username || currentUser.displayName || 'user'}</span>
-                                        </div>
-                                        <div className="hard-square-poster">
-                                            <img
-                                                src={getCacheBustedUrl(getResolvedPosterUrl(selectedSeries.id, selectedSeries.poster_path, globalPosters, 'original'))}
-                                                alt={selectedSeries.name}
-                                                className="raw-poster-img"
-                                                crossOrigin="anonymous"
-                                            />
-                                        </div>
-                                        <div className="title-logo-anchor">
-                                            {selectedSeries.logo_path ? (
-                                                <img
-                                                    src={getCacheBustedUrl(`https://image.tmdb.org/t/p/original${selectedSeries.logo_path}`)}
-                                                    alt="Logo"
-                                                    className="official-title-card"
-                                                    crossOrigin="anonymous"
-                                                />
-                                            ) : (
-                                                <div className="title-text-fallback" style={{ fontFamily: "'Anton', sans-serif" }}>{selectedSeries.name}</div>
-                                            )}
-                                        </div>
+                        <div className="instagram-post-canvas" ref={graphRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+
+                            {/* BACKGROUND POSTER (Blurred/Darkened) */}
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundImage: `url(${getCacheBustedUrl(getResolvedPosterUrl(selectedSeries.id, selectedSeries.poster_path, globalPosters, 'original'))})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                filter: 'brightness(0.3) blur(20px)',
+                                transform: 'scale(1.1)', // Prevent blur edges
+                                zIndex: 0
+                            }}></div>
+
+                            {/* MAIN POSTER (Clean) - Optional, maybe just the graph? Let's keep a nice header */}
+                            <div style={{
+                                position: 'relative',
+                                zIndex: 1,
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                padding: '60px',
+                                boxSizing: 'border-box',
+                                justifyContent: 'space-between'
+                            }}>
+                                {/* HEADER */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '32px', color: '#FFD600', textTransform: 'uppercase' }}>Series Graph</span>
+                                        <h1 style={{ fontFamily: "'Anton', sans-serif", fontSize: '80px', color: '#fff', margin: '10px 0', lineHeight: '0.9', maxWidth: '800px' }}>
+                                            {selectedSeries.name}
+                                        </h1>
                                     </div>
-
-                                    <div className="grid-col-vessel">
-                                        <div className="branding-header-right">
-                                            <span className="reviewed-on-label" style={{ fontFamily: "'Anton', sans-serif" }}>reviewed on</span>
-                                            <div className="brand-logo-heavy" style={{ fontFamily: "'Anton', sans-serif" }}>
-                                                <span className="logo-s-gold">S</span>
-                                                <span className="logo-text-white">ERIEE</span>
-                                            </div>
-                                        </div>
-                                        <div className="header-labels-s">
-                                            <div className="spacer-e-header"></div>
-                                            {graphData?.seasons?.map(s => (
-                                                <div key={s.season_number} className="s-label-fix">S{s.season_number}</div>
-                                            ))}
-                                        </div>
-                                        <div className="grid-body-stack">
-                                            {graphData?.seasons && Array.from({ length: Math.max(...graphData.seasons.map(s => s.episode_count)) }).map((_, eIdx) => (
-                                                <div key={eIdx} className="grid-row-flex">
-                                                    <div className="e-label-fix column-e">E{eIdx + 1}</div>
-                                                    {graphData.seasons.map(s => {
-                                                        const epNum = eIdx + 1;
-                                                        if (epNum > s.episode_count) return <div key={s.season_number} className="square-cell-unit empty"></div>;
-
-                                                        const rating = graphData.ratings[`${s.season_number}-${epNum}`];
-                                                        const isWatched = graphData.watched.has(`${s.season_number}-${epNum}`);
-                                                        const ratingClass = getRatingClass(rating, isWatched);
-
-                                                        return (
-                                                            <div key={s.season_number} className={`square-cell-unit rating-fill-${ratingClass}`}>
-                                                                {rating > 0 ? rating.toFixed(1) : (isWatched ? '0.0' : '')}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ))}
-                                        </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '24px', color: 'rgba(255,255,255,0.7)' }}>reviewed by</span>
+                                        <span style={{ fontFamily: "'Anton', sans-serif", fontSize: '40px', color: '#fff' }}>@{userData?.username || currentUser.displayName || 'user'}</span>
                                     </div>
-                                    {/* Share Button Logic Removed from Hidden Graph (handled by outside popup) */}
                                 </div>
+
+                                {/* GRAPH GRID (Centered/Floating) */}
+                                <div style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    margin: '60px 0'
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '15px',
+                                        background: 'rgba(0,0,0,0.5)',
+                                        padding: '40px',
+                                        borderRadius: '30px',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.1)'
+                                    }}>
+                                        {graphData?.seasons && Array.from({ length: Math.max(...graphData.seasons.map(s => s.episode_count)) }).map((_, eIdx) => (
+                                            <div key={eIdx} style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                                {/* E-Number Label */}
+                                                <div style={{
+                                                    width: '50px',
+                                                    fontFamily: "'Roboto Mono', monospace",
+                                                    fontSize: '24px',
+                                                    color: 'rgba(255,255,255,0.5)',
+                                                    textAlign: 'right'
+                                                }}>E{eIdx + 1}</div>
+
+                                                {/* Season Cells */}
+                                                {graphData.seasons.map(s => {
+                                                    const epNum = eIdx + 1;
+                                                    if (epNum > s.episode_count) return <div key={s.season_number} style={{ width: '60px', height: '60px' }}></div>;
+
+                                                    const rating = graphData.ratings[`${s.season_number}-${epNum}`];
+                                                    const isWatched = graphData.watched.has(`${s.season_number}-${epNum}`);
+
+                                                    // Dynamic Color Logic
+                                                    let bg = '#1a1a1a';
+                                                    let color = '#fff';
+                                                    if (rating >= 9) { bg = '#FFD600'; color = '#000'; }
+                                                    else if (rating >= 7) { bg = '#4CAF50'; color = '#fff'; }
+                                                    else if (rating > 0) { bg = '#FF5722'; color = '#fff'; }
+                                                    else if (isWatched) { bg = '#333'; color = '#666'; }
+
+                                                    return (
+                                                        <div key={s.season_number} style={{
+                                                            width: '60px',
+                                                            height: '60px',
+                                                            background: bg,
+                                                            color: color,
+                                                            borderRadius: '8px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontFamily: "'Anton', sans-serif",
+                                                            fontSize: '24px',
+                                                            boxShadow: rating > 0 ? '0 4px 10px rgba(0,0,0,0.3)' : 'none'
+                                                        }}>
+                                                            {rating > 0 ? rating.toFixed(1) : (isWatched ? '-' : '')}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+
+                                        {/* Season Labels (Bottom) */}
+                                        <div style={{ display: 'flex', gap: '15px', marginLeft: '65px', marginTop: '10px' }}>
+                                            {graphData?.seasons?.map(s => (
+                                                <div key={s.season_number} style={{
+                                                    width: '60px',
+                                                    textAlign: 'center',
+                                                    fontFamily: "'Roboto Mono', monospace",
+                                                    fontSize: '24px',
+                                                    color: 'rgba(255,255,255,0.5)'
+                                                }}>S{s.season_number}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* FOOTER */}
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', opacity: 0.8 }}>
+                                    <div style={{ fontWeight: 900, fontSize: '32px', color: '#fff', letterSpacing: '2px', fontFamily: "'Anton', sans-serif" }}>SERIEE</div>
+                                    <div style={{ width: '8px', height: '8px', background: '#FFD600', borderRadius: '50%' }}></div>
+                                    <span style={{ fontFamily: "'Netflix Sans', sans-serif", fontSize: '24px', color: '#ccc' }}>TRACK. RATE. SHARE.</span>
+                                </div>
+
                             </div>
                         </div>
                     </div>
